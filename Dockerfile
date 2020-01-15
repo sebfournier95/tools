@@ -1,7 +1,4 @@
-#######################
-# Step 1: Base target #
-#######################
-FROM python:alpine as base
+FROM alpine:latest
 ARG http_proxy
 ARG https_proxy
 ARG no_proxy
@@ -12,21 +9,19 @@ ENV APP ${APP}
 ENV APP_VERSION ${app_ver}
 
 VOLUME /root/.aws
-VOLUME /$app_path
+VOLUME /$app_path/data
 
 WORKDIR /$app_path
 
+RUN apk -v --no-cache add curl jq gawk gettext
+RUN apk add --no-cache \
+    bash \
+    rsync \
+    openssh-client \
+    python \
+    py-pip && \
+    pip install awscli awscli_plugin_endpoint --upgrade --user && \
+    mv /root/.local/bin/* /usr/local/bin && \
+    apk -v --purge del py-pip
 
-# update debian w/proxy & mirror then installs git in case of git dependencies
-
-# RUN apk add curl jq gawk gettext gcc python-dev linux-headers libc-dev
-RUN apk add curl jq gawk gettext gcc libc-dev libffi-dev openssl-dev make
-
-RUN pip install `echo $proxy | sed 's/\(\S\S*\)/--proxy \1/'` nova aws awscli_plugin_endpoint
-
-RUN apk del gcc libc-dev libffi-dev openssl-dev make
-
-RUN rm /var/cache/apk/*
-
-# container shall not be definitively started, it's a tool
-ENTRYPOINT [ "aws" ]
+CMD ["sleep","600"]
