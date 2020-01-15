@@ -29,7 +29,7 @@ before_script:
 
 script:
   - git fetch && git tag -l
-  - make build
+  - make docker-build
 
 after_success:
   - if [[ "$TRAVIS_BRANCH" == "master" ]]; then
