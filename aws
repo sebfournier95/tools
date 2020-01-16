@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 tty="-t $(tty &>/dev/null && echo "-i")"
 
-docker run --rm $tty -d\
+docker run --rm $tty \
 		--name matchid-tools\
 		-v "$(pwd):$(pwd)" \
 		-v "$HOME/.aws/:/root/.aws"\
