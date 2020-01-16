@@ -19,6 +19,7 @@ RUN apk add --no-cache \
     rsync \
     openssh-client \
     python \
+    groff \
     py-pip && \
     pip install awscli awscli_plugin_endpoint --upgrade --user && \
     mv /root/.local/bin/* /usr/local/bin && \
