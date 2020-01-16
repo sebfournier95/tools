@@ -24,4 +24,4 @@ RUN apk add --no-cache \
     mv /root/.local/bin/* /usr/local/bin && \
     apk -v --purge del py-pip
 
-CMD ["sleep","600"]
+CMD ["sleep","30"]
