@@ -13,7 +13,7 @@ VOLUME /$app_path/data
 
 WORKDIR /$app_path
 
-RUN apk -v --no-cache add curl jq gawk gettext
+# RUN apk -v --no-cache add curl jq gawk gettext
 RUN apk add --no-cache \
     bash \
     rsync \
@@ -24,4 +24,4 @@ RUN apk add --no-cache \
     mv /root/.local/bin/* /usr/local/bin && \
     apk -v --purge del py-pip
 
-CMD ["sleep","30"]
+ENTRYPOINT ["aws"]
