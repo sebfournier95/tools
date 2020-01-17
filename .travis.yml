@@ -20,7 +20,7 @@ before_install:
   - chmod +x docker-compose
   - sudo mv docker-compose /usr/local/bin/
   - sudo apt-get -q update
-  - sudo apt-get install -qy make apt-transport-https ca-certificates curl software-properties-common jq gpg
+  - sudo apt-get install -qy make apt-transport-https ca-certificates curl software-properties-common jq
 
 before_script:
   - uname -a
