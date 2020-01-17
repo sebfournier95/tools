@@ -10,8 +10,8 @@ SCW_SSHUSER=ubuntu
 SCW_FLAVOR=GP1-XS
 
 #choose public or private address
-SCW_IP=public_ip.adress
 SCW_IP=private_ip
+SCW_IP=public_ip.address
 #if private, you use probably use a bastion for proxyJump
 # CLOUD_SSHOPTS=-J bastion
 

@@ -90,7 +90,7 @@ ${DATA_DIR}:
 ${CONFIG_DIR}:
 	@mkdir -p ${CONFIG_DIR}
 
-${CONFIG_INIT_FILE}: ${CONFIG_DIR} docker-install
+${CONFIG_INIT_FILE}: ${CONFIG_DIR} tools-install docker-install
 	@touch ${CONFIG_INIT_FILE}
 
 ${CONFIG_NEXT_FILE}: ${CONFIG_DIR} aws-install
@@ -105,20 +105,30 @@ ${CONFIG_FILE}: ${CONFIG_INIT_FILE} ${CONFIG_NEXT_FILE}
 
 config: ${CONFIG_FILE}
 
+# system tools, widely used in matchID projects
+
+tools-install:
+ifeq ("$(wildcard /usr/bin/envsubst)","")
+	sudo apt-get install -yqq gettext; true
+endif
+ifeq ("$(wildcard /usr/bin/curl)","")
+	sudo apt-get install -yqq curl; true
+endif
+ifeq ("$(wildcard /usr/bin/gawk)","")
+	sudo apt-get install -yqq gawk; true
+endif
+ifeq ("$(wildcard /usr/bin/jq)","")
+	sudo apt-get install -yqq jq; true
+endif
 
 #docker section
 docker-install: ${CONFIG_DOCKER_FILE}
 
 ${CONFIG_DOCKER_FILE}: ${CONFIG_DIR}
-ifeq ("$(wildcard /usr/bin/envsubst)","")
-	sudo apt-get update -q -q; true
-	sudo apt-get install -y -q gettext; true
-endif
 ifeq ("$(wildcard /usr/bin/docker /usr/local/bin/docker)","")
 	echo install docker-ce, still to be tested
-	sudo apt-get update  -y -q -q
 	sudo echo '* libraries/restart-without-asking boolean true' | sudo debconf-set-selections
-	sudo apt-get install -yq \
+	sudo apt-get install -yqq \
 	apt-transport-https \
 	ca-certificates \
 	curl \
@@ -129,8 +139,8 @@ ifeq ("$(wildcard /usr/bin/docker /usr/local/bin/docker)","")
 		"deb https://download.docker.com/linux/ubuntu \
 		`lsb_release -cs` \
 		stable"
-	sudo apt-get update -yq
-	sudo apt-get install -yq docker-ce
+	sudo apt-get update -yqq
+	sudo apt-get install -yqq docker-ce
 endif
 		@(if (id -Gn ${USER} | grep -vc docker); then sudo usermod -aG docker ${USER} ;fi) > /dev/null
 ifeq ("$(wildcard /usr/bin/docker-compose /usr/local/bin/docker-compose)","")
@@ -232,7 +242,7 @@ SCW-instance-order: ${CLOUD_DIR}
 	@if [ ! -f ${CLOUD_SERVER_ID_FILE} ]; then\
 		curl -s ${SCW_API}/servers -H "X-Auth-Token: ${SCW_SECRET_TOKEN}" \
 			-H "Content-Type: application/json" \
-			-d '{"name": "${APP}", "image": "${SCW_IMAGE_ID}", "commercial_type": "${SCW_FLAVOR}", "organization": "${SCW_ORGANIZATION_ID}"}' \
+			-d '{"name": "${APP}", "image": "${SCW_IMAGE_ID}", "commercial_type": "${SCW_FLAVOR}", "organization": "${SCW_ORGANIZATION_ID}" ${SCW_SERVER_OPTS}}' \
 		| jq -r '.server.id' > ${CLOUD_SERVER_ID_FILE};\
 	fi
 
@@ -372,7 +382,6 @@ EC2-instance-order: ${CLOUD_DIR} EC2-add-sshkey
 			(\
 				${AWS} ${EC2} run-instances --key-name ${SSHKEYNAME} \
 		 			--image-id ${EC2_IMAGE_ID} --instance-type ${EC2_FLAVOR_TYPE} \
-					--tag-specifications "Tags=[{Key=Name,Value=${TOOLS}}]" \
 				| jq -r '.Instances[0].InstanceId' > ${CLOUD_SERVER_ID_FILE} 2>&1 \
 		 	) && echo "EC2 instance ordered with success"\
 		) || echo "EC2 instance order failed";\
@@ -505,3 +514,8 @@ ${GIT_BACKEND}:
 	@echo "export ES_NODES=1" >> ${GIT_BACKEND}/artifacts
 	@echo "export PROJECTS=${PWD}/projects" >> ${GIT_BACKEND}/artifacts
 	@echo "export S3_BUCKET=${S3_BUCKET}" >> ${GIT_BACKEND}/artifacts
+
+# tests for automation
+remote-config-test:
+	/usr/bin/time -f %e make remote-config remote-clean CLOUD=SCW SCW_FLAVOR=DEV1-S SCW_IMAGE_ID=f974feac-abae-4365-b988-8ec7d1cec10d
+
