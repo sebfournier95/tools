@@ -20,12 +20,17 @@ before_install:
   - chmod +x docker-compose
   - sudo mv docker-compose /usr/local/bin/
   - sudo apt-get -q update
-  - sudo apt-get install -qy make apt-transport-https ca-certificates curl software-properties-common jq
+  - sudo apt-get install -qy make apt-transport-https ca-certificates curl software-properties-common jq gpg
 
 before_script:
   - uname -a
   - type -a docker-compose && docker-compose version
   - docker version
+  - echo "$SSHENC" | base64 -d | gpg -d --passphrase $SSHPWD --batch > /tmp/id_rsa
+  - eval "$(ssh-agent -s)"
+  - chmod 600 /tmp/id_rsa
+  - ssh-add /tmp/id_rsa
+
 
 script:
   - git fetch && git tag -l
