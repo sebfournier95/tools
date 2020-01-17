@@ -106,32 +106,32 @@ docker-config: ${CONFIG_DOCKER_FILE}
 
 ${CONFIG_DOCKER_FILE}:
 ifeq ("$(wildcard /usr/bin/envsubst)","")
-        sudo apt-get update -q -q; true
-        sudo apt-get install -y -q gettext; true
+	sudo apt-get update -q -q; true
+	sudo apt-get install -y -q gettext; true
 endif
 ifeq ("$(wildcard /usr/bin/docker /usr/local/bin/docker)","")
-        echo install docker-ce, still to be tested
-        sudo apt-get update  -y -q -q
-        sudo echo '* libraries/restart-without-asking boolean true' | sudo debconf-set-selections
-        sudo apt-get install -yq \
-        apt-transport-https \
-        ca-certificates \
-        curl \
-        software-properties-common
+	echo install docker-ce, still to be tested
+	sudo apt-get update  -y -q -q
+	sudo echo '* libraries/restart-without-asking boolean true' | sudo debconf-set-selections
+	sudo apt-get install -yq \
+	apt-transport-https \
+	ca-certificates \
+	curl \
+	software-properties-common
 
-        curl -fsSL https://download.docker.com/linux/${ID}/gpg | sudo apt-key add -
-        sudo add-apt-repository \
-                "deb https://download.docker.com/linux/ubuntu \
-                `lsb_release -cs` \
-                stable"
-        sudo apt-get update -yq
-        sudo apt-get install -yq docker-ce
+	curl -fsSL https://download.docker.com/linux/${ID}/gpg | sudo apt-key add -
+	sudo add-apt-repository \
+		"deb https://download.docker.com/linux/ubuntu \
+		`lsb_release -cs` \
+		stable"
+	sudo apt-get update -yq
+	sudo apt-get install -yq docker-ce
 endif
 		@(if (id -Gn ${USER} | grep -vc docker); then sudo usermod -aG docker ${USER} ;fi) > /dev/null
 ifeq ("$(wildcard /usr/bin/docker-compose /usr/local/bin/docker-compose)","")
-        @echo installing docker-compose
-        @sudo curl -s -L https://github.com/docker/compose/releases/download/1.19.0/docker-compose-`uname -s`-`uname -m` -o /usr/local/bin/docker-compose
-        @sudo chmod +x /usr/local/bin/docker-compose
+	@echo installing docker-compose
+	@sudo curl -s -L https://github.com/docker/compose/releases/download/1.19.0/docker-compose-`uname -s`-`uname -m` -o /usr/local/bin/docker-compose
+	@sudo chmod +x /usr/local/bin/docker-compose
 endif
 	@touch ${CONFIG_DOCKER_FILE}
 
