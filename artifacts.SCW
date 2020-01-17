@@ -3,11 +3,16 @@
 SCW_API=https://api.scaleway.com/instance/v1/zones/fr-par-1
 
 #ubuntu 18.04
+
+#general usage 4vCPU 16Go with ubuntu 18.04 50Go
 SCW_IMAGE_ID=d4067cdc-dc9d-4810-8a26-0dae51d7df42
+SCW_FLAVOR=GP1-XS
+#minimal 2vCPU 2Go with ubuntu 18.04 50Go
+SCW_IMAGE_ID=f974feac-abae-4365-b988-8ec7d1cec10d
+SCW_FLAVOR=DEV1-S
+
 SCW_SSHUSER=ubuntu
 
-#baremetal 8vCPU 16Go
-SCW_FLAVOR=GP1-XS
 
 #choose public or private address
 SCW_IP=private_ip

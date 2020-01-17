@@ -490,14 +490,16 @@ remote-clean: cloud-instance-down
 
 ${CONFIG_APP_FILE}: ${CONFIG_REMOTE_FILE}
 		@\
-		ssh="ssh ${SSHOPTS} $$(cat ${CLOUD_USER_FILE})@$$(cat ${CLOUD_HOST_FILE})";\
-		$$ssh git clone ${GIT_ROOT}/${APP} ${APP_GROUP}/${APP};
+		H=$$(cat ${CLOUD_HOST_FILE});\
+		U=$$(cat ${CLOUD_USER_FILE});\
+		ssh ${SSHOPTS} $$U@$$H git clone ${GIT_ROOT}/${APP} ${APP_GROUP}/${APP};
 
 remote-actions: ${CONFIG_APP_FILE}
 		@\
-		ssh="ssh ${SSHOPTS} $$(cat ${CLOUD_USER_FILE})@$$(cat ${CLOUD_HOST_FILE})";\
+		H=$$(cat ${CLOUD_HOST_FILE});\
+		U=$$(cat ${CLOUD_USER_FILE});\
 		if [ "${ACTIONS}" != "" ];then\
-			$$ssh make -C ${APP_GROUP}/${APP} ${ACTIONS};\
+			ssh ${SSHOPTS} $$U@$$H make -C ${APP_GROUP}/${APP} ${ACTIONS};\
 		fi
 
 datagouv-to-s3: s3-get-catalog datagouv-get-files
@@ -518,5 +520,6 @@ ${GIT_BACKEND}:
 
 # tests for automation
 remote-config-test:
-	/usr/bin/time -f %e make remote-config remote-clean CLOUD=SCW SCW_FLAVOR=DEV1-S SCW_IMAGE_ID=f974feac-abae-4365-b988-8ec7d1cec10d
+	/usr/bin/time -f %e make remote-config remote-clean
+
 
