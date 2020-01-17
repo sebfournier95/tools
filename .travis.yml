@@ -35,10 +35,10 @@ before_script:
 script:
   - git fetch && git tag -l
   - make docker-build
-  - make remote-config-test
 
 after_success:
   - if [[ "$TRAVIS_BRANCH" == "master" ]]; then
       make docker-tag docker-push ;
+      make remote-config-test ;
     fi
 

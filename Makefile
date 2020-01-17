@@ -356,7 +356,7 @@ ${CONFIG_AWS_FILE}: ${CONFIG_DIR}
 	@docker pull matchid/tools
 	@touch ${CONFIG_AWS_FILE}
 
-aws-install: ${CONFIG_AWS}
+aws-install: ${CONFIG_AWS_FILE}
 
 EC2-add-sshkey:
 	@if [ ! -f "${CLOUD_SSHKEY_FILE}" ];then\
