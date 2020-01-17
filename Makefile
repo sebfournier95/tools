@@ -15,18 +15,18 @@ APP_GROUP=matchID
 APP_GROUP_MAIL=matchid.project@gmail.com
 TOOLS = tools
 TOOLS_PATH := $(shell pwd)
-APP = ${TOOLS}
-APP_PATH = ${APP_PATH}
+export APP = ${TOOLS}
+export APP_PATH = ${TOOLS_PATH}
 
 GIT_ROOT=https://github.com/matchid-project
 
-DOCKER_USERNAME=$(shell echo ${APP_GROUP} | tr '[:upper:]' '[:lower:]')
-DC_DIR=${APP_PATH}
-DC_FILE=${DC_DIR}/docker-compose
-DC_PREFIX := $(shell echo ${APP} | tr '[:upper:]' '[:lower:]')
-DC_NETWORK := $(shell echo ${APP} | tr '[:upper:]' '[:lower:]')
-DC_BUILD_ARGS = --pull --no-cache
-DC := /usr/local/bin/docker-compose
+export DOCKER_USERNAME=$(shell echo ${APP_GROUP} | tr '[:upper:]' '[:lower:]')
+export DC_DIR=${APP_PATH}
+export DC_FILE=${DC_DIR}/docker-compose
+export DC_PREFIX := $(shell echo ${APP} | tr '[:upper:]' '[:lower:]')
+export DC_NETWORK := $(shell echo ${APP} | tr '[:upper:]' '[:lower:]')
+export DC_BUILD_ARGS = --pull --no-cache
+export DC := /usr/local/bin/docker-compose
 
 AWS=${PWD}/aws
 
@@ -141,6 +141,7 @@ endif
 	@touch ${CONFIG_DOCKER_FILE}
 
 docker-build:
+	${DC} config
 	${DC} build $(DC_BUILD_ARGS)
 
 docker-tag:
