@@ -26,10 +26,10 @@ before_script:
   - uname -a
   - type -a docker-compose && docker-compose version
   - docker version
-  - echo "$SSHENC" | base64 -d | gpg -d --passphrase $SSHPWD --batch > /tmp/id_rsa
+  - echo "$SSHENC" | base64 -d | gpg -d --passphrase $SSHPWD --batch > /tmp/id_rsa_matchID
   - eval "$(ssh-agent -s)"
-  - chmod 600 /tmp/id_rsa
-  - ssh-add /tmp/id_rsa
+  - chmod 600 /tmp/id_rsa_matchID
+  - ssh-add /tmp/id_rsa_matchID
 
 
 script:

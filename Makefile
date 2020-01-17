@@ -128,6 +128,7 @@ ${CONFIG_DOCKER_FILE}: ${CONFIG_DIR}
 ifeq ("$(wildcard /usr/bin/docker /usr/local/bin/docker)","")
 	echo install docker-ce, still to be tested
 	sudo echo '* libraries/restart-without-asking boolean true' | sudo debconf-set-selections
+	sudo apt-get update -yqq
 	sudo apt-get install -yqq \
 	apt-transport-https \
 	ca-certificates \
