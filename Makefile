@@ -56,7 +56,7 @@ START_TIMEOUT = 120
 CLOUD_DIR=${TOOLS_PATH}/cloud
 CLOUD=SCW
 
-CONFIG_DIR=configured
+CONFIG_DIR=${TOOLS_PATH}/configured
 CONFIG_INIT_FILE=${CONFIG_DIR}/init
 CONFIG_NEXT_FILE=${CONFIG_DIR}/next
 CONFIG_FILE=${CONFIG_DIR}/conf
@@ -85,10 +85,10 @@ ${DATA_DIR}:
 ${CONFIG_DIR}:
 	@mkdir -p ${CONFIG_DIR}
 
-${CONFIG_INIT_FILE}: docker-install
+${CONFIG_INIT_FILE}: ${CONFIG_DIR} docker-install
 	@touch ${CONFIG_INIT_FILE}
 
-${CONFIG_NEXT_FILE}: aws-install
+${CONFIG_NEXT_FILE}: ${CONFIG_DIR} aws-install
 	@touch ${CONFIG_NEXT_FILE}
 
 config-init: ${CONFIG_INIT_FILE}
@@ -102,9 +102,9 @@ config: ${CONFIG_FILE}
 
 
 #docker section
-docker-config: ${CONFIG_DOCKER_FILE}
+docker-install: ${CONFIG_DOCKER_FILE}
 
-${CONFIG_DOCKER_FILE}:
+${CONFIG_DOCKER_FILE}: ${CONFIG_DIR}
 ifeq ("$(wildcard /usr/bin/envsubst)","")
 	sudo apt-get update -q -q; true
 	sudo apt-get install -y -q gettext; true
@@ -313,7 +313,7 @@ OS-instance-delete:
 
 #EC2 section
 
-${CONFIG_AWS_FILE}:
+${CONFIG_AWS_FILE}: ${CONFIG_DIR}
 	@docker pull matchid/tools
 	@touch ${CONFIG_AWS_FILE}
 
@@ -366,7 +366,7 @@ EC2-instance-delete:
 
 
 #S3 section
-${S3_CATALOG}: config ${DATA_DIR}
+${S3_CATALOG}: ${CONFIG_AWS_FILE} ${DATA_DIR}
 	@echo getting ${S3_BUCKET} catalog from s3 API
 	@${AWS} s3 ls ${S3_BUCKET} | awk '{print $$NF}' | egrep '${FILES_TO_SYNC}' | sort > ${S3_CATALOG}
 
