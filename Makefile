@@ -10,10 +10,16 @@ SHELL=/bin/bash
 USE_TTY := $(shell test -t 1 && USE_TTY="-t")
 
 #base paths
-APP = tools
-APP_PATH := $(shell pwd)
+APP_GROUP=matchID
+APP_GROUP_MAIL=matchid.project@gmail.com
+TOOLS = tools
+TOOLS_PATH := $(shell pwd)
+APP = ${TOOLS}
+APP_PATH = ${APP_PATH}
 
-DOCKER_USERNAME=matchid
+GIT_ROOT=https://github.com/matchid-project
+
+DOCKER_USERNAME=$(shell echo ${APP_GROUP} | tr '[:upper:]' '[:lower:]')
 DC_DIR=${APP_PATH}
 DC_FILE=${DC_DIR}/docker-compose
 DC_PREFIX := $(shell echo ${APP} | tr '[:upper:]' '[:lower:]')
@@ -33,49 +39,72 @@ include ./artifacts.EC2.outscale
 include ./artifacts.OS.ovh
 include ./artifacts.SCW
 
-S3_BUCKET=matchid
+S3_BUCKET=$(shell echo ${APP_GROUP} | tr '[:upper:]' '[:lower:]')
 S3_CATALOG = ${DATA_DIR}/${DATAGOUV_DATASET}.s3.list
-S3_CONFIG = ${APP_PATH}/.aws/config
+S3_CONFIG = ${TOOLS_PATH}/.aws/config
 
-SSHID=matchid@matchid.project.gmail.com
-SSHKEY_PRIVATE = ${HOME}/.ssh/id_rsa_${APP}
+SSHID=${APP_GROUP_MAIL}
+SSHKEY_PRIVATE = ${HOME}/.ssh/id_rsa_${APP_GROUP}
 SSHKEY = ${SSHKEY_PRIVATE}.pub
-SSHKEYNAME = ${APP}
+SSHKEYNAME = ${TOOLS}
 SSH_TIMEOUT = 90
 SSHOPTS=-o "StrictHostKeyChecking no" -i ${SSHKEY} ${CLOUD_SSHOPTS}
 
 EC2=ec2 ${EC2_ENDPOINT_OPTION} --profile ${EC2_PROFILE}
 
 START_TIMEOUT = 120
-CLOUD_DIR=${APP_PATH}/cloud
+CLOUD_DIR=${TOOLS_PATH}/cloud
 CLOUD=SCW
+
+CONFIG_DIR=configured
+CONFIG_INIT_FILE=${CONFIG_DIR}/init
+CONFIG_NEXT_FILE=${CONFIG_DIR}/next
+CONFIG_FILE=${CONFIG_DIR}/conf
+CONFIG_REMOTE_FILE=${CONFIG_DIR}/remote
+CONFIG_TOOLS_FILE=${CONFIG_DIR}/${TOOLS}.deployed
+CONFIG_APP_FILE=${CONFIG_DIR}/${APP}.deployed
+CONFIG_DOCKER_FILE=${CONFIG_DIR}/docker
+CONFIG_AWS_FILE=${CONFIG_DIR}/aws
+
+
+REMOTE_BASE_PATH=matchID
 
 dummy		    := $(shell touch artifacts)
 include ./artifacts
 
-export APP_VERSION :=  $(shell git describe --tags || cat VERSION )
+export APP_VERSION :=  $(shell git describe --tags )
 CLOUD_SERVER_ID_FILE=${CLOUD_DIR}/${CLOUD}.id
 CLOUD_HOST_FILE=${CLOUD_DIR}/${CLOUD}.host
 CLOUD_FIRST_USER_FILE=${CLOUD_DIR}/${CLOUD}.user.first
 CLOUD_USER_FILE=${CLOUD_DIR}/${CLOUD}.user
-
+CLOUD_UP_FILE=${CLOUD_DIR}/${CLOUD}.up
 
 ${DATA_DIR}:
 	@if [ ! -d "${DATA_DIR}" ]; then mkdir -p ${DATA_DIR};fi
 
-# config
-config-0: docker-install
+${CONFIG_DIR}:
+	@mkdir -p ${CONFIG_DIR}
 
-config-1: aws-install
+${CONFIG_INIT_FILE}: docker-install
+	@touch ${CONFIG_INIT_FILE}
 
-config: config-0 config-1
-	cat > config
+${CONFIG_NEXT_FILE}: aws-install
+	@touch ${CONFIG_NEXT_FILE}
 
-# remote-config
+config-init: ${CONFIG_INIT_FILE}
+
+config-next: ${CONFIG_NEXT_FILE}
+
+${CONFIG_FILE}: ${CONFIG_INIT_FILE} ${CONFIG_NEXT_FILE}
+	@touch ${CONFIG_FILE}
+
+config: ${CONFIG_FILE}
 
 
 #docker section
-docker-install:
+docker-config: ${CONFIG_DOCKER_FILE}
+
+${CONFIG_DOCKER_FILE}:
 ifeq ("$(wildcard /usr/bin/envsubst)","")
         sudo apt-get update -q -q; true
         sudo apt-get install -y -q gettext; true
@@ -104,6 +133,7 @@ ifeq ("$(wildcard /usr/bin/docker-compose /usr/local/bin/docker-compose)","")
         @sudo curl -s -L https://github.com/docker/compose/releases/download/1.19.0/docker-compose-`uname -s`-`uname -m` -o /usr/local/bin/docker-compose
         @sudo chmod +x /usr/local/bin/docker-compose
 endif
+	@touch ${CONFIG_DOCKER_FILE}
 
 docker-build:
 	${DC} build $(DC_BUILD_ARGS)
@@ -124,7 +154,6 @@ docker-pull:
 
 generate-test-file: ${DATA_DIR}
 	dd if=/dev/urandom bs=64M count=16 > ${FILE}
-
 
 #cloud section
 ${SSHKEY}:
@@ -180,7 +209,10 @@ ${CLOUD}-instance-wait-ssh: ${CLOUD_FIRST_USER_FILE} ${CLOUD_HOST_FILE}
 	  ((timeout--)); sleep 1 ; \
     done ; exit $$ret
 
-cloud-instance-up: ${CLOUD}-instance-wait-ssh
+${CLOUD_UP_FILE}: ${CLOUD}-instance-wait-ssh ${CLOUD_USER_FILE}
+	@touch ${CLOUD_UP_FILE}
+
+cloud-instance-up: ${CLOUD_UP_FILE}
 
 cloud-instance-down: ${CLOUD}-instance-delete cloud-dir-delete
 
@@ -280,9 +312,12 @@ OS-instance-delete:
 	nova delete $$(cat ${CLOUD_SERVER_ID_FILE})
 
 #EC2 section
-aws-install:
+
+${CONFIG_AWS_FILE}:
 	@docker pull matchid/tools
-	cat > aws-install
+	@touch ${CONFIG_AWS_FILE}
+
+aws-install: ${CONFIG_AWS}
 
 EC2-add-sshkey:
 	@(\
@@ -299,7 +334,7 @@ EC2-instance-order: ${CLOUD_DIR} EC2-add-sshkey
 			(\
 				${AWS} ${EC2} run-instances --key-name ${SSHKEYNAME} \
 		 			--image-id ${EC2_IMAGE_ID} --instance-type ${EC2_FLAVOR_TYPE} \
-					--tag-specifications "Tags=[{Key=Name,Value=${APP}}]" \
+					--tag-specifications "Tags=[{Key=Name,Value=${TOOLS}}]" \
 				| jq -r '.Instances[0].InstanceId' > ${CLOUD_SERVER_ID_FILE} 2>&1 \
 		 	) && echo "EC2 instance ordered with success"\
 		) || echo "EC2 instance order failed";\
@@ -380,6 +415,38 @@ datagouv-get-files: ${DATAGOUV_CATALOG}
 	else\
 		echo no new file downloaded from datagouv;\
 	fi
+
+${CONFIG_REMOTE_FILE}: cloud-instance-up
+		\
+		H=$$(cat ${CLOUD_HOST_FILE});\
+		U=$$(cat ${CLOUD_USER_FILE});\
+		if [ "${CLOUD}" == "SCW" ];then\
+			ssh ${SSHOPTS} root@$$H apt-get install -o Dpkg::Options::="--force-confold" -yq sudo;\
+		fi;\
+		ssh ${SSHOPTS} $$U@$$H mkdir -p ${APP_GROUP};\
+		ssh ${SSHOPTS} $$U@$$H sudo apt-get update -yq;\
+		ssh ${SSHOPTS} $$U@$$H sudo apt-get install -yq make;\
+		ssh ${SSHOPTS} $$U@$$H git clone ${GIT_ROOT}/${TOOLS} ${APP_GROUP}/${TOOLS};\
+		ssh ${SSHOPTS} $$U@$$H make -C ${APP_GROUP}/${TOOLS} config-init;\
+		ssh ${SSHOPTS} $$U@$$H make -C ${APP_GROUP}/${TOOLS} config-next;
+		touch ${CONFIG_REMOTE_FILE}
+		touch ${CONFIG_TOOLS_FILE}
+
+remote-config: ${CONFIG_REMOTE_FILE}
+
+remote-deploy: ${CONFIG_APP_FILE}
+
+${CONFIG_APP_FILE}: ${CONFIG_REMOTE_FILE}
+		@\
+		ssh="ssh ${SSHOPTS} $$(cat ${CLOUD_USER_FILE})@$$(cat ${CLOUD_HOST_FILE})";\
+		$$ssh git clone ${GIT_ROOT}/${APP} ${APP_GROUP}/${APP};
+
+remote-actions: ${CONFIG_APP_FILE}
+		@\
+		ssh="ssh ${SSHOPTS} $$(cat ${CLOUD_USER_FILE})@$$(cat ${CLOUD_HOST_FILE})";\
+		if [ "${ACTIONS}" != "" ];then\
+			$$ssh make -C ${APP_GROUP}/${APP} ${ACTIONS};\
+		fi
 
 datagouv-to-s3: s3-get-catalog datagouv-get-files
 	@for file in $$(ls ${DATA_DIR} | egrep '${FILES_TO_SYNC}');do\
