@@ -2,7 +2,6 @@
 tty="-t $(tty &>/dev/null && echo "-i")"
 
 docker run --rm $tty \
-		--name matchid-tools\
 		-v "$HOME:$HOME" \
 		-v "$HOME/.aws/:/root/.aws"\
 		matchid/tools "$@"

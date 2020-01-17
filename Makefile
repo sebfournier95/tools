@@ -74,11 +74,15 @@ dummy		    := $(shell touch artifacts)
 include ./artifacts
 
 export APP_VERSION :=  $(shell git describe --tags )
+CLOUD_SSHKEY_FILE=${CLOUD_DIR}/${CLOUD}.sshkey
 CLOUD_SERVER_ID_FILE=${CLOUD_DIR}/${CLOUD}.id
 CLOUD_HOST_FILE=${CLOUD_DIR}/${CLOUD}.host
 CLOUD_FIRST_USER_FILE=${CLOUD_DIR}/${CLOUD}.user.first
 CLOUD_USER_FILE=${CLOUD_DIR}/${CLOUD}.user
 CLOUD_UP_FILE=${CLOUD_DIR}/${CLOUD}.up
+CLOUD_HOSTNAME=${APP_GROUP}-${APP}
+
+CLOUD=SCW
 
 ${DATA_DIR}:
 	@if [ ! -d "${DATA_DIR}" ]; then mkdir -p ${DATA_DIR};fi
@@ -199,23 +203,28 @@ ${CLOUD_HOST_FILE}: ${CLOUD_DIR} ${CLOUD}-instance-get-host
 	@echo ${CLOUD} ip: $$(cat ${CLOUD_HOST_FILE})
 
 ${CLOUD}-instance-wait-ssh: ${CLOUD_FIRST_USER_FILE} ${CLOUD_HOST_FILE}
-	@\
-	HOST=$$(cat ${CLOUD_HOST_FILE});\
-	SSHUSER=$$(cat ${CLOUD_FIRST_USER_FILE});\
-	(ssh-keygen -R $$HOST > /dev/null 2>&1) || true;\
-	timeout=${SSH_TIMEOUT} ; ret=1 ; until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do\
-	  ((ssh ${SSHOPTS} $$SSHUSER@$$HOST sleep 1) > /dev/null 2>&1);\
-	  ret=$$? ; \
-	  if [ "$$ret" -ne "0" ] ; then echo "waiting for ssh service on ${CLOUD} instance - $$timeout" ; fi ;\
-	  ((timeout--)); sleep 1 ; \
-    done ; exit $$ret
+	@if [ ! -f "${CLOUD_UP_FILE}" ];then\
+		HOST=$$(cat ${CLOUD_HOST_FILE});\
+		SSHUSER=$$(cat ${CLOUD_FIRST_USER_FILE});\
+		(ssh-keygen -R $$HOST > /dev/null 2>&1) || true;\
+		timeout=${SSH_TIMEOUT} ; ret=1 ;\
+		until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do\
+			((ssh ${SSHOPTS} $$SSHUSER@$$HOST sleep 1) > /dev/null 2>&1);\
+			ret=$$? ; \
+			if [ "$$ret" -ne "0" ] ; then echo "waiting for ssh service on ${CLOUD} instance - $$timeout" ; fi ;\
+			((timeout--)); sleep 1 ; \
+		done ;\
+		exit $$ret;\
+	fi
 
 ${CLOUD_UP_FILE}: ${CLOUD}-instance-wait-ssh ${CLOUD_USER_FILE}
 	@touch ${CLOUD_UP_FILE}
 
 cloud-instance-up: ${CLOUD_UP_FILE}
 
-cloud-instance-down: ${CLOUD}-instance-delete cloud-dir-delete
+cloud-instance-down: ${CLOUD}-instance-delete
+	@(rm ${CLOUD_UP_FILE} ${CLOUD_HOST_FILE} ${CLOUD_SERVER_ID_FILE} \
+		${CLOUD_FIRST_USER_FILE} ${CLOUD_USER_FILE} ${CLOUD_SSHKEY_FILE} > /dev/null 2>&1) || true
 
 #Scaleway section
 SCW-instance-order: ${CLOUD_DIR}
@@ -240,13 +249,17 @@ SCW-instance-start: ${CLOUD_SERVER_ID_FILE}
 		)
 
 SCW-instance-wait-running: SCW-instance-start
-	@SCW_SERVER_ID=$$(cat ${CLOUD_SERVER_ID_FILE});\
-	timeout=${START_TIMEOUT} ; ret=1 ; until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do\
-	  curl -s ${SCW_API}/servers -H "X-Auth-Token: ${SCW_SECRET_TOKEN}" | jq -cr  ".servers[] | select (.id == \"$$SCW_SERVER_ID\") | .state" | (grep running > /dev/null);\
-	  ret=$$? ; \
-	  if [ "$$ret" -ne "0" ] ; then echo "waiting for scaleway instance $$SCW_SERVER_ID to start $$timeout" ; fi ;\
-	  ((timeout--)); sleep 1 ; \
-    done ; exit $$ret
+	@if [ ! -f "${CLOUD_UP_FILE}" ];then\
+		SCW_SERVER_ID=$$(cat ${CLOUD_SERVER_ID_FILE});\
+		timeout=${START_TIMEOUT} ; ret=1 ;\
+		until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do\
+			curl -s ${SCW_API}/servers -H "X-Auth-Token: ${SCW_SECRET_TOKEN}" | jq -cr  ".servers[] | select (.id == \"$$SCW_SERVER_ID\") | .state" | (grep running > /dev/null);\
+			ret=$$? ; \
+			if [ "$$ret" -ne "0" ] ; then echo "waiting for scaleway instance $$SCW_SERVER_ID to start $$timeout" ; fi ;\
+			((timeout--)); sleep 1 ; \
+		done ; \
+		exit $$ret;\
+	fi
 
 SCW-instance-get-host: SCW-instance-wait-running
 	@if [ ! -f "${CLOUD_HOST_FILE}" ];then\
@@ -266,51 +279,64 @@ SCW-instance-delete:
 			) \
 		&& \
 			(\
-				echo scaleway server $$(cat ${CLOUD_SERVER_ID_FILE}) terminating &&\
-				rm ${CLOUD_SERVER_ID_FILE}\
+				echo scaleway server $$(cat ${CLOUD_SERVER_ID_FILE}) terminating\
 			)\
-		) || echo scaleway error while terminating server;\
+		) || (echo scaleway error while terminating server && exit 1);\
 	else\
-		echo no ${CLOUD_SERVER_ID_FILE} for deletion;\
+		(echo no ${CLOUD_SERVER_ID_FILE} for deletion && exit 1);\
 	fi
 
 
 #Openstack section
-OS-add-sshkey: ${SSHKEY}
-	@(\
+OS-add-sshkey: ${SSHKEY} ${CLOUD_DIR}
+	@if [ ! -f "${CLOUD_SSHKEY_FILE}" ];then\
+	(\
 		(nova keypair-list | sed 's/|//g' | egrep -v '\-\-\-|Name' | (egrep '^\s*${SSHKEYNAME}\s' > /dev/null) &&\
-		 echo "ssh key already deployed to openstack" ) \
+		 echo "ssh key already deployed to openstack" &&\
+		 touch ${CLOUD_SSHKEY_FILE}\
+		 ) \
 	  || \
 		(nova keypair-add --pub-key ${SSHKEY} ${SSHKEYNAME} &&\
 		 nova keypair-list | sed 's/|//g' | egrep -v '\-\-\-|Name' | (egrep '^\s*${SSHKEYNAME}\s' > /dev/null) &&\
-		 echo "ssh key deployed with success to openstack" ) \
-	  )
+		 echo "ssh key deployed with success to openstack" &&\
+		 touch ${CLOUD_SSHKEY_FILE}\
+		 ) \
+	  );\
+	fi;
 
 OS-instance-order: ${CLOUD_DIR} OS-add-sshkey
-	@(\
-		(nova list | sed 's/|//g' | egrep -v '\-\-\-|Name' | (egrep '\s${APP}\s' > /dev/null) && \
+	@if [ ! -f "${CLOUD_SERVER_ID_FILE}" ];then\
+	(\
+		(nova list | sed 's/|//g' | egrep -v '\-\-\-|Name' | (egrep '\s${CLOUD_HOSTNAME}\s' > /dev/null) && \
 		echo "openstack instance already ordered")\
 	 || \
-		(nova boot --key-name ${SSHKEYNAME} --flavor ${OS_FLAVOR_ID} --image ${OS_IMAGE_ID} ${APP} && \
+		(nova boot --key-name ${SSHKEYNAME} --flavor ${OS_FLAVOR_ID} --image ${OS_IMAGE_ID} ${CLOUD_HOSTNAME} && \
 	 		echo "openstack intance ordered with success" &&\
-			(echo ${APP} > ${CLOUD_SERVER_ID_FILE}) \
+			(echo ${CLOUD_HOSTNAME} > ${CLOUD_SERVER_ID_FILE}) \
 		) || echo "openstance instance order failed"\
-	)
+	);\
+	fi
 
 OS-instance-wait-running: ${CLOUD_SERVER_ID_FILE}
-	@timeout=${START_TIMEOUT} ; ret=1 ; until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do\
-	  nova list | sed 's/|//g' | egrep -v '\-\-\-|Name' | (egrep '\s${APP}\s.*Running' > /dev/null) ;\
-	  ret=$$? ; \
-	  if [ "$$ret" -ne "0" ] ; then echo "waiting for openstack instance to start $$timeout" ; fi ;\
-	  ((timeout--)); sleep 1 ; \
-	done ; exit $$ret
+	@if [ ! -f "${CLOUD_UP_FILE}" ];then\
+		timeout=${START_TIMEOUT} ; ret=1 ;\
+		until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do\
+	  		nova list | sed 's/|//g' | egrep -v '\-\-\-|Name' | (egrep '\s${CLOUD_HOSTNAME}\s.*Running' > /dev/null) ;\
+	  		ret=$$? ; \
+	  		if [ "$$ret" -ne "0" ] ; then echo "waiting for openstack instance to start $$timeout" ; fi ;\
+	  		((timeout--)); sleep 1 ; \
+		done ; \
+		exit $$ret;\
+	fi
 
 OS-instance-get-host: OS-instance-wait-running
-	@nova list | sed 's/|//g' | egrep -v '\-\-\-|Name' | egrep '\s${APP}\s.*Running' \
-		| sed 's/.*Ext-Net=//;s/,.*//' > ${CLOUD_HOST_FILE}
+	@if [ ! -f "${CLOUD_HOST_FILE}" ];then\
+		(nova list | sed 's/|//g' | egrep -v '\-\-\-|Name' | egrep '\s${CLOUD_HOSTNAME}\s.*Running' |\
+			sed 's/.*Ext-Net=//;s/,.*//' > ${CLOUD_HOST_FILE});\
+	fi
 
 OS-instance-delete:
-	nova delete $$(cat ${CLOUD_SERVER_ID_FILE})
+	@nova delete $$(cat ${CLOUD_SERVER_ID_FILE})
 
 #EC2 section
 
@@ -321,13 +347,23 @@ ${CONFIG_AWS_FILE}: ${CONFIG_DIR}
 aws-install: ${CONFIG_AWS}
 
 EC2-add-sshkey:
-	@(\
-		((${AWS} ${EC2} describe-key-pairs --key-name ${SSHKEYNAME}  > /dev/null 2>&1) &&\
-			echo "ssh key already deployed to EC2") \
-	|| \
-		((${AWS} ${EC2} import-key-pair --key-name ${SSHKEYNAME} --public-key-material file://${SSHKEY} > /dev/null 2>&1) &&\
-			echo "ssh key deployed with success to EC2") \
-	)
+	@if [ ! -f "${CLOUD_SSHKEY_FILE}" ];then\
+		(\
+			(\
+				(${AWS} ${EC2} describe-key-pairs --key-name ${SSHKEYNAME}  > /dev/null 2>&1) &&\
+				(echo "ssh key already deployed to EC2";\
+				touch ${CLOUD_SSHKEY_FILE})\
+			) \
+		|| \
+			(\
+				(${AWS} ${EC2} import-key-pair --key-name ${SSHKEYNAME} --public-key-material file://${SSHKEY} \
+					> /dev/null 2>&1)\
+				&&\
+					(echo "ssh key deployed with success to EC2";\
+					touch ${CLOUD_SSHKEY_FILE})\
+			) \
+		);\
+	fi
 
 EC2-instance-order: ${CLOUD_DIR} EC2-add-sshkey
 	@if [ ! -f "${CLOUD_SERVER_ID_FILE}" ];then\
@@ -349,13 +385,17 @@ EC2-instance-get-host: EC2-instance-wait-running
 	fi
 
 EC2-instance-wait-running: ${CLOUD_SERVER_ID_FILE}
-	@EC2_SERVER_ID=$$(cat ${CLOUD_SERVER_ID_FILE});\
-	timeout=${START_TIMEOUT} ; ret=1 ; until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do\
-	  ${AWS} ${EC2} describe-instances --instance-ids $$EC2_SERVER_ID | jq -c '.Reservations[].Instances[].State.Name' | (grep running > /dev/null);\
-	  ret=$$? ; \
-	  if [ "$$ret" -ne "0" ] ; then echo "waiting for EC2 instance $$EC2_SERVER_ID to start $$timeout" ; fi ;\
-	  ((timeout--)); sleep 1 ; \
-    done ; exit $$ret
+	@if [ ! -f "${CLOUD_UP_FILE}" ];then\
+		EC2_SERVER_ID=$$(cat ${CLOUD_SERVER_ID_FILE});\
+		timeout=${START_TIMEOUT} ; ret=1 ; \
+		until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do\
+			${AWS} ${EC2} describe-instances --instance-ids $$EC2_SERVER_ID | jq -c '.Reservations[].Instances[].State.Name' | (grep running > /dev/null);\
+			ret=$$? ; \
+			if [ "$$ret" -ne "0" ] ; then echo "waiting for EC2 instance $$EC2_SERVER_ID to start $$timeout" ; fi ;\
+			((timeout--)); sleep 1 ; \
+		done ;\
+		exit $$ret;\
+	fi
 
 EC2-instance-delete:
 	@if [ -f "${CLOUD_SERVER_ID_FILE}" ];then\
@@ -363,7 +403,6 @@ EC2-instance-delete:
 		${AWS} ${EC2} terminate-instances --instance-ids $$EC2_SERVER_ID |\
 			jq -r '.TerminatingInstances[0].CurrentState.Name' | sed 's/$$/ EC2 instance/';\
 	fi
-	@rm ${CLOUD_SERVER_ID_FILE} > /dev/null 2>&1 | true;
 
 
 #S3 section
@@ -417,15 +456,14 @@ datagouv-get-files: ${DATAGOUV_CATALOG}
 		echo no new file downloaded from datagouv;\
 	fi
 
-${CONFIG_REMOTE_FILE}: cloud-instance-up
-		\
+${CONFIG_REMOTE_FILE}: cloud-instance-up ${CONFIG_DIR}
+		@\
 		H=$$(cat ${CLOUD_HOST_FILE});\
 		U=$$(cat ${CLOUD_USER_FILE});\
 		if [ "${CLOUD}" == "SCW" ];then\
 			ssh ${SSHOPTS} root@$$H apt-get install -o Dpkg::Options::="--force-confold" -yq sudo;\
 		fi;\
 		ssh ${SSHOPTS} $$U@$$H mkdir -p ${APP_GROUP};\
-		ssh ${SSHOPTS} $$U@$$H sudo apt-get update -yq;\
 		ssh ${SSHOPTS} $$U@$$H sudo apt-get install -yq make;\
 		ssh ${SSHOPTS} $$U@$$H git clone ${GIT_ROOT}/${TOOLS} ${APP_GROUP}/${TOOLS};\
 		ssh ${SSHOPTS} $$U@$$H make -C ${APP_GROUP}/${TOOLS} config-init;\
@@ -436,6 +474,8 @@ ${CONFIG_REMOTE_FILE}: cloud-instance-up
 remote-config: ${CONFIG_REMOTE_FILE}
 
 remote-deploy: ${CONFIG_APP_FILE}
+
+remote-clean: cloud-instance-down
 
 ${CONFIG_APP_FILE}: ${CONFIG_REMOTE_FILE}
 		@\
