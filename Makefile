@@ -6,6 +6,7 @@
 ##############################################
 
 SHELL=/bin/bash
+include /etc/os-release
 
 USE_TTY := $(shell test -t 1 && USE_TTY="-t")
 
