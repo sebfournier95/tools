@@ -25,6 +25,7 @@ export DC_DIR=${APP_PATH}
 export DC_FILE=${DC_DIR}/docker-compose
 export DC_PREFIX := $(shell echo ${APP} | tr '[:upper:]' '[:lower:]')
 export DC_NETWORK := $(shell echo ${APP} | tr '[:upper:]' '[:lower:]')
+export DC_IMAGE_NAME = ${DC_PREFIX}
 export DC_BUILD_ARGS = --pull --no-cache
 export DC := /usr/local/bin/docker-compose
 
@@ -67,9 +68,6 @@ CONFIG_APP_FILE=${CONFIG_DIR}/${APP}.deployed
 CONFIG_DOCKER_FILE=${CONFIG_DIR}/docker
 CONFIG_AWS_FILE=${CONFIG_DIR}/aws
 
-
-REMOTE_BASE_PATH=matchID
-
 dummy		    := $(shell touch artifacts)
 include ./artifacts
 
@@ -81,8 +79,6 @@ CLOUD_FIRST_USER_FILE=${CLOUD_DIR}/${CLOUD}.user.first
 CLOUD_USER_FILE=${CLOUD_DIR}/${CLOUD}.user
 CLOUD_UP_FILE=${CLOUD_DIR}/${CLOUD}.up
 CLOUD_HOSTNAME=${APP_GROUP}-${APP}
-
-CLOUD=SCW
 
 ${DATA_DIR}:
 	@if [ ! -d "${DATA_DIR}" ]; then mkdir -p ${DATA_DIR};fi
@@ -159,15 +155,15 @@ docker-tag:
 	docker tag ${DOCKER_USERNAME}/${APP}:${APP_VERSION} ${DOCKER_USERNAME}/${APP}:latest
 
 docker-push: docker-login
-	docker push ${DOCKER_USERNAME}/${APP}:${APP_VERSION}
-	docker push ${DOCKER_USERNAME}/${APP}:latest
+	docker push ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${APP_VERSION}
+	docker push ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:latest
 
 docker-login:
 	@echo docker login for ${DOCKER_USERNAME}
 	@echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
 
 docker-pull:
-	docker pull ${DOCKER_USERNAME}/${APP}:${APP_VERSION}
+	docker pull ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${APP_VERSION}
 
 generate-test-file: ${DATA_DIR}
 	dd if=/dev/urandom bs=64M count=16 > ${FILE}
@@ -493,6 +489,8 @@ ${CONFIG_APP_FILE}: ${CONFIG_REMOTE_FILE}
 		H=$$(cat ${CLOUD_HOST_FILE});\
 		U=$$(cat ${CLOUD_USER_FILE});\
 		ssh ${SSHOPTS} $$U@$$H git clone ${GIT_ROOT}/${APP} ${APP_GROUP}/${APP};
+		ssh ${SSHOPTS} $$U@$$H make -c ${GIT_ROOT}/${APP} config
+		touch ${CONFIG_APP_FILE}
 
 remote-actions: ${CONFIG_APP_FILE}
 		@\
