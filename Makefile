@@ -19,6 +19,8 @@ export APP = ${TOOLS}
 export APP_PATH = ${TOOLS_PATH}
 
 GIT_ROOT=https://github.com/matchid-project
+GIT_BRANCH := $(shell git branch | grep '*' | awk '{print $$2}')
+GIT_BRANCH_MASTER=master
 
 export DOCKER_USERNAME=$(shell echo ${APP_GROUP} | tr '[:upper:]' '[:lower:]')
 export DC_DIR=${APP_PATH}
@@ -152,11 +154,19 @@ docker-build:
 	${DC} build $(DC_BUILD_ARGS)
 
 docker-tag:
-	docker tag ${DOCKER_USERNAME}/${APP}:${APP_VERSION} ${DOCKER_USERNAME}/${APP}:latest
+	@if [ "${GIT_BRANCH}" == "${GIT_BRANCH_MASTER}" ];then\
+		docker tag ${DOCKER_USERNAME}/${APP}:${APP_VERSION} ${DOCKER_USERNAME}/${APP}:latest;\
+	else\
+		docker tag ${DOCKER_USERNAME}/${APP}:${APP_VERSION} ${DOCKER_USERNAME}/${APP}:${GIT_BRANCH};\
+	fi
 
-docker-push: docker-login
-	docker push ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${APP_VERSION}
-	docker push ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:latest
+docker-push: docker-login docker-tag
+	@docker push ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${APP_VERSION}
+	@if [ "${GIT_BRANCH}" == "${GIT_BRANCH_MASTER}" ];then\
+		docker push ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:latest;\
+	else\
+		docker push ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${GIT_BRANCH};\
+	fi
 
 docker-login:
 	@echo docker login for ${DOCKER_USERNAME}
