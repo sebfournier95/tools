@@ -359,7 +359,14 @@ OS-instance-delete:
 #EC2 section
 
 ${CONFIG_AWS_FILE}: ${CONFIG_DIR}
-	@docker pull matchid/tools
+	@docker pull matchid/tools && echo docker pulled matchid/tools
+	@if [ ! -d ${HOME}/.aws ];then\
+		echo create aws configuration;\
+		mkdir -p ${HOME}/.aws;\
+		echo -e "[default]\naws_access_key_id=${aws_access_key_id}\naws_secret_access_key=${aws_secret_access_key}\n" \
+		> .aws/credentials;
+		cp .aws/config ${HOME}/.aws/;
+	fi;
 	@touch ${CONFIG_AWS_FILE}
 
 aws-install: ${CONFIG_AWS_FILE}
@@ -507,7 +514,7 @@ remote-actions: ${CONFIG_APP_FILE}
 		H=$$(cat ${CLOUD_HOST_FILE});\
 		U=$$(cat ${CLOUD_USER_FILE});\
 		if [ "${ACTIONS}" != "" ];then\
-			ssh ${SSHOPTS} $$U@$$H make -C ${APP_GROUP}/${APP} ${ACTIONS};\
+			ssh ${SSHOPTS} $$U@$$H make -C ${APP_GROUP}/${APP} ${ACTIONS} aws_access_key_id=${aws_access_key_id} aws_secret_access_key=${aws_secret_access_key};\
 		fi
 
 datagouv-to-s3: s3-get-catalog datagouv-get-files
