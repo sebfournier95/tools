@@ -38,7 +38,7 @@ script:
 
 after_success:
   - if [[ "$TRAVIS_BRANCH" == "master" ]]; then
-      make docker-push ;
+      make docker-push GIT_BRANCH="$TRAVIS_BRANCH";
       make remote-config-test ;
     fi
 
