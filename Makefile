@@ -535,6 +535,7 @@ ${GIT_BACKEND}:
 
 # tests for automation
 remote-config-test:
-	/usr/bin/time -f %e make remote-config remote-clean
-
+	@/usr/bin/time -f %e make remote-config
+	@make remote-actions generate-test-file s3-push
+	@make remote-clean
 
