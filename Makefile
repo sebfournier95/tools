@@ -491,7 +491,7 @@ ${CONFIG_REMOTE_FILE}: cloud-instance-up ${CONFIG_DIR}
 		ssh ${SSHOPTS} $$U@$$H sudo apt-get install -yq make;\
 		ssh ${SSHOPTS} $$U@$$H git clone ${GIT_ROOT}/${TOOLS} ${APP_GROUP}/${TOOLS};\
 		ssh ${SSHOPTS} $$U@$$H make -C ${APP_GROUP}/${TOOLS} config-init;\
-		ssh ${SSHOPTS} $$U@$$H make -C ${APP_GROUP}/${TOOLS} config-next;
+		ssh ${SSHOPTS} $$U@$$H make -C ${APP_GROUP}/${TOOLS} config-next aws_access_key_id=${aws_access_key_id} aws_secret_access_key=${aws_secret_access_key};
 		touch ${CONFIG_REMOTE_FILE}
 		touch ${CONFIG_TOOLS_FILE}
 
