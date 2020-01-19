@@ -155,9 +155,9 @@ docker-build:
 
 docker-tag:
 	@if [ "${GIT_BRANCH}" == "${GIT_BRANCH_MASTER}" ];then\
-		docker tag ${DOCKER_USERNAME}/${APP}:${APP_VERSION} ${DOCKER_USERNAME}/${APP}:latest;\
+		docker tag ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${APP_VERSION} ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:latest;\
 	else\
-		docker tag ${DOCKER_USERNAME}/${APP}:${APP_VERSION} ${DOCKER_USERNAME}/${APP}:${GIT_BRANCH};\
+		docker tag ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${APP_VERSION} ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${GIT_BRANCH};\
 	fi
 
 docker-push: docker-login docker-tag
