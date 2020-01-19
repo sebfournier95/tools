@@ -31,7 +31,7 @@ export DC_IMAGE_NAME = ${DC_PREFIX}
 export DC_BUILD_ARGS = --pull --no-cache
 export DC := /usr/local/bin/docker-compose
 
-AWS=${PWD}/aws
+AWS=${TOOLS_PATH}/aws
 
 DATAGOUV_CATALOG = ${DATA_DIR}/${DATAGOUV_DATASET}.datagouv.list
 DATAGOUV_FILES_TO_SYNC=(^|\s)test.bin($$|\s)
@@ -482,18 +482,20 @@ datagouv-get-files: ${DATAGOUV_CATALOG}
 
 ${CONFIG_REMOTE_FILE}: cloud-instance-up ${CONFIG_DIR}
 		@\
-		H=$$(cat ${CLOUD_HOST_FILE});\
-		U=$$(cat ${CLOUD_USER_FILE});\
-		if [ "${CLOUD}" == "SCW" ];then\
-			ssh ${SSHOPTS} root@$$H apt-get install -o Dpkg::Options::="--force-confold" -yq sudo;\
-		fi;\
-		ssh ${SSHOPTS} $$U@$$H mkdir -p ${APP_GROUP};\
-		ssh ${SSHOPTS} $$U@$$H sudo apt-get install -yq make;\
-		ssh ${SSHOPTS} $$U@$$H git clone ${GIT_ROOT}/${TOOLS} ${APP_GROUP}/${TOOLS};\
-		ssh ${SSHOPTS} $$U@$$H make -C ${APP_GROUP}/${TOOLS} config-init;\
-		ssh ${SSHOPTS} $$U@$$H make -C ${APP_GROUP}/${TOOLS} config-next aws_access_key_id=${aws_access_key_id} aws_secret_access_key=${aws_secret_access_key};
-		touch ${CONFIG_REMOTE_FILE}
-		touch ${CONFIG_TOOLS_FILE}
+		if [ ! -f "${CONFIG_REMOTE_FILE}" ];then\
+			H=$$(cat ${CLOUD_HOST_FILE});\
+			U=$$(cat ${CLOUD_USER_FILE});\
+			if [ "${CLOUD}" == "SCW" ];then\
+				ssh ${SSHOPTS} root@$$H apt-get install -o Dpkg::Options::="--force-confold" -yq sudo;\
+			fi;\
+			ssh ${SSHOPTS} $$U@$$H mkdir -p ${APP_GROUP};\
+			ssh ${SSHOPTS} $$U@$$H sudo apt-get install -yq make;\
+			ssh ${SSHOPTS} $$U@$$H git clone ${GIT_ROOT}/${TOOLS} ${APP_GROUP}/${TOOLS};\
+			ssh ${SSHOPTS} $$U@$$H make -C ${APP_GROUP}/${TOOLS} config-init;\
+			ssh ${SSHOPTS} $$U@$$H make -C ${APP_GROUP}/${TOOLS} config-next aws_access_key_id=${aws_access_key_id} aws_secret_access_key=${aws_secret_access_key};\
+			touch ${CONFIG_REMOTE_FILE};\
+			touch ${CONFIG_TOOLS_FILE};\
+		fi
 
 remote-config: ${CONFIG_REMOTE_FILE}
 
@@ -503,13 +505,15 @@ remote-clean: cloud-instance-down
 
 ${CONFIG_APP_FILE}: ${CONFIG_REMOTE_FILE}
 		@\
-		H=$$(cat ${CLOUD_HOST_FILE});\
-		U=$$(cat ${CLOUD_USER_FILE});\
-		if [ "${APP}" != "${TOOLS}" ];then\
-			ssh ${SSHOPTS} $$U@$$H git clone ${GIT_ROOT}/${APP} ${APP_GROUP}/${APP};\
-			ssh ${SSHOPTS} $$U@$$H make -c ${GIT_ROOT}/${APP} config;\
-		fi;
-		touch ${CONFIG_APP_FILE}
+		if [ ! -f "${CONFIG_APP_FILE}" ];then\
+			H=$$(cat ${CLOUD_HOST_FILE});\
+			U=$$(cat ${CLOUD_USER_FILE});\
+			if [ "${APP}" != "${TOOLS}" ];then\
+				ssh ${SSHOPTS} $$U@$$H git clone ${GIT_ROOT}/${APP} ${APP_GROUP}/${APP};\
+				ssh ${SSHOPTS} $$U@$$H make -c ${GIT_ROOT}/${APP} config;\
+			fi;
+			touch ${CONFIG_APP_FILE};
+		fi
 
 remote-actions: ${CONFIG_APP_FILE}
 		@\
