@@ -91,7 +91,7 @@ ${CONFIG_DIR}:
 ${CONFIG_INIT_FILE}: ${CONFIG_DIR} tools-install docker-install
 	@touch ${CONFIG_INIT_FILE}
 
-${CONFIG_NEXT_FILE}: ${CONFIG_DIR} aws-install
+${CONFIG_NEXT_FILE}: ${CONFIG_DIR} config-aws
 	@touch ${CONFIG_NEXT_FILE}
 
 config-init: ${CONFIG_INIT_FILE}
@@ -360,16 +360,16 @@ OS-instance-delete:
 
 ${CONFIG_AWS_FILE}: ${CONFIG_DIR}
 	@docker pull matchid/tools && echo docker pulled matchid/tools
-	@if [ ! -d ${HOME}/.aws ];then\
+	@if [ ! -d "${HOME}/.aws" ];then\
 		echo create aws configuration;\
 		mkdir -p ${HOME}/.aws;\
 		echo -e "[default]\naws_access_key_id=${aws_access_key_id}\naws_secret_access_key=${aws_secret_access_key}\n" \
-		> .aws/credentials;
-		cp .aws/config ${HOME}/.aws/;
+		> .aws/credentials;\
+		cp .aws/config ${HOME}/.aws/;\
 	fi;
 	@touch ${CONFIG_AWS_FILE}
 
-aws-install: ${CONFIG_AWS_FILE}
+config-aws: ${CONFIG_AWS_FILE}
 
 EC2-add-sshkey:
 	@if [ ! -f "${CLOUD_SSHKEY_FILE}" ];then\
