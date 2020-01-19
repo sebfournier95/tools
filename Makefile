@@ -507,7 +507,7 @@ ${CONFIG_APP_FILE}: ${CONFIG_REMOTE_FILE}
 		U=$$(cat ${CLOUD_USER_FILE});\
 		if [ "${APP}" != "${TOOLS}" ];then\
 			ssh ${SSHOPTS} $$U@$$H git clone ${GIT_ROOT}/${APP} ${APP_GROUP}/${APP};\
-			ssh ${SSHOPTS} $$U@$$H make -c ${GIT_ROOT}/${APP} config;
+			ssh ${SSHOPTS} $$U@$$H make -c ${GIT_ROOT}/${APP} config;\
 		fi;
 		touch ${CONFIG_APP_FILE}
 
