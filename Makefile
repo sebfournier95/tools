@@ -364,7 +364,7 @@ ${CONFIG_AWS_FILE}: ${CONFIG_DIR}
 		echo create aws configuration;\
 		mkdir -p ${HOME}/.aws;\
 		echo -e "[default]\naws_access_key_id=${aws_access_key_id}\naws_secret_access_key=${aws_secret_access_key}\n" \
-		> .aws/credentials;\
+		> ${HOME}/.aws/credentials;\
 		cp .aws/config ${HOME}/.aws/;\
 	fi;
 	@touch ${CONFIG_AWS_FILE}
