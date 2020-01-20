@@ -15,6 +15,7 @@ APP_GROUP=matchID
 APP_GROUP_MAIL=matchid.project@gmail.com
 TOOLS = tools
 TOOLS_PATH := $(shell pwd)
+APP_GROUP_PATH := $(shell dirname ${TOOLS_PATH})
 export APP = ${TOOLS}
 export APP_PATH = ${TOOLS_PATH}
 
@@ -510,7 +511,7 @@ ${CONFIG_APP_FILE}: ${CONFIG_REMOTE_FILE}
 			U=$$(cat ${CLOUD_USER_FILE});\
 			if [ "${APP}" != "${TOOLS}" ];then\
 				ssh ${SSHOPTS} $$U@$$H git clone ${GIT_ROOT}/${APP} ${APP_GROUP}/${APP};\
-				ssh ${SSHOPTS} $$U@$$H make -c ${GIT_ROOT}/${APP} config;\
+				ssh ${SSHOPTS} $$U@$$H make -C ${APP_GROUP}/${APP} config;\
 			fi;\
 			touch ${CONFIG_APP_FILE};\
 		fi
