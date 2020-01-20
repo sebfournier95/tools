@@ -177,7 +177,7 @@ docker-pull:
 	docker pull ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${APP_VERSION}
 
 generate-test-file: ${DATA_DIR}
-	dd if=/dev/urandom bs=64M count=16 > ${FILE}
+	dd if=/dev/urandom bs=16M count=16 > ${FILE}
 
 #cloud section
 ${SSHKEY}:
