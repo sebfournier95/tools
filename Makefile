@@ -222,13 +222,13 @@ ${CLOUD_HOST_FILE}: ${CLOUD_DIR} ${CLOUD}-instance-get-host
 	@echo ${CLOUD} ip: $$(cat ${CLOUD_HOST_FILE})
 
 ${CLOUD}-instance-wait-ssh: ${CLOUD_FIRST_USER_FILE} ${CLOUD_HOST_FILE}
-	if [ ! -f "${CLOUD_UP_FILE}" ];then\
+	@if [ ! -f "${CLOUD_UP_FILE}" ];then\
 		HOST=$$(cat ${CLOUD_HOST_FILE});\
 		SSHUSER=$$(cat ${CLOUD_FIRST_USER_FILE});\
 		(ssh-keygen -R $$HOST > /dev/null 2>&1) || true;\
 		timeout=${SSH_TIMEOUT} ; ret=1 ;\
 		until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do\
-			((ssh -vvv ${SSHOPTS} $$SSHUSER@$$HOST sleep 1) );\
+			((ssh ${SSHOPTS} $$SSHUSER@$$HOST sleep 1) );\
 			ret=$$? ; \
 			if [ "$$ret" -ne "0" ] ; then echo "waiting for ssh service on ${CLOUD} instance - $$timeout" ; fi ;\
 			((timeout--)); sleep 1 ; \
