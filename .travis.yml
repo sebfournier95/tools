@@ -30,8 +30,8 @@ before_script:
   - eval "$(ssh-agent -s)"
   - chmod 600 /tmp/id_rsa_matchID
   - ssh-add /tmp/id_rsa_matchID
-  - echo "Host * !""$BASTION" > ~/.ssh/config
-  - echo "   ProxyCommand ssh $BASTION nc %h %p" >> ~/.ssh/config
+  - echo "Host * !""$BASTION_HOST" > ~/.ssh/config
+  - echo "   ProxyCommand ssh $BASTION_USER@$BASTION_HOST nc %h %p" >> ~/.ssh/config
   - cat ~/.ssh/config
 
 
