@@ -89,7 +89,7 @@ ${DATA_DIR}:
 ${CONFIG_DIR}:
 	@mkdir -p ${CONFIG_DIR}
 
-${CONFIG_INIT_FILE}: ${CONFIG_DIR} tools-install docker-install
+${CONFIG_INIT_FILE}: ${CONFIG_DIR} config-proxy tools-install docker-install
 	@touch ${CONFIG_INIT_FILE}
 
 ${CONFIG_NEXT_FILE}: ${CONFIG_DIR} config-aws
@@ -103,6 +103,23 @@ ${CONFIG_FILE}: ${CONFIG_INIT_FILE} ${CONFIG_NEXT_FILE}
 	@touch ${CONFIG_FILE}
 
 config: ${CONFIG_FILE}
+
+config-proxy:
+	@if [ ! -z "${http_proxy}" ];then\
+		if [ -z "$(grep http_proxy /etc/environment)"]; then\
+			(echo "http_proxy=${http_proxy}" | sudo tee -a /etc/environment);\
+		fi;\
+	fi;
+	@if [ ! -z "${https_proxy}" ];then\
+		if [ -z "$(grep https_proxy /etc/environment)"]; then\
+			(echo "https_proxy=${https_proxy}" | sudo tee -a /etc/environment);\
+		fi;\
+	fi;
+	@if [ ! -z "${no_proxy}" ];then\
+		if [ -z "$(grep no_proxy /etc/environment)"]; then\
+			(echo "no_proxy=${no_proxy}" | sudo tee -a /etc/environment);\
+		fi;\
+	fi;
 
 # system tools, widely used in matchID projects
 
@@ -121,7 +138,18 @@ ifeq ("$(wildcard /usr/bin/jq)","")
 endif
 
 #docker section
-docker-install: ${CONFIG_DOCKER_FILE}
+docker-install: ${CONFIG_DOCKER_FILE} docker-config-proxy
+
+docker-config-proxy:
+	if [ ! -z "${http_proxy}" ];then\
+		if [ ! -f "/etc/systemd/system/docker.service.d/http-proxy.conf"]; then\
+			sudo mkdir -p /etc/systemd/system/docker.service.d/;\
+			(echo "[Service]" | sudo tee -a /etc/systemd/system/docker.service.d/http-proxy.conf);\
+			(echo "Environment="HTTPS_PROXY=${http_proxy}" "HTTP_PROXY=${https_proxy}" | sudo tee -a /etc/systemd/system/docker.service.d/http-proxy.conf);\
+			sudo systemctl daemon-reload;\
+			sudo systemctl restart docker;\
+		fi;\
+	fi
 
 ${CONFIG_DOCKER_FILE}: ${CONFIG_DIR}
 ifeq ("$(wildcard /usr/bin/docker /usr/local/bin/docker)","")
@@ -142,7 +170,7 @@ ifeq ("$(wildcard /usr/bin/docker /usr/local/bin/docker)","")
 	sudo apt-get update -yqq
 	sudo apt-get install -yqq docker-ce
 endif
-		@(if (id -Gn ${USER} | grep -vc docker); then sudo usermod -aG docker ${USER} ;fi) > /dev/null
+	@(if (id -Gn ${USER} | grep -vc docker); then sudo usermod -aG docker ${USER} ;fi) > /dev/null
 ifeq ("$(wildcard /usr/bin/docker-compose /usr/local/bin/docker-compose)","")
 	@echo installing docker-compose
 	@sudo curl -s -L https://github.com/docker/compose/releases/download/1.19.0/docker-compose-`uname -s`-`uname -m` -o /usr/local/bin/docker-compose
