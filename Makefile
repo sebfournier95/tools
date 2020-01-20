@@ -53,7 +53,6 @@ SSHKEY_PRIVATE = ${HOME}/.ssh/id_rsa_${APP_GROUP}
 SSHKEY = ${SSHKEY_PRIVATE}.pub
 SSHKEYNAME = ${TOOLS}
 SSH_TIMEOUT = 90
-SSHOPTS=-o "StrictHostKeyChecking no" -i ${SSHKEY} ${CLOUD_SSHOPTS}
 
 EC2=ec2 ${EC2_ENDPOINT_OPTION} --profile ${EC2_PROFILE}
 
@@ -74,6 +73,7 @@ CONFIG_AWS_FILE=${CONFIG_DIR}/aws
 dummy		    := $(shell touch artifacts)
 include ./artifacts
 
+SSHOPTS=-o "StrictHostKeyChecking no" -i ${SSHKEY} ${CLOUD_SSHOPTS}
 SCW_SERVER_CONF={"name": "${APP}", "image": "${SCW_IMAGE_ID}", "commercial_type": "${SCW_FLAVOR}", "organization": "${SCW_ORGANIZATION_ID}"}
 APP_VERSION :=  $(shell git describe --tags )
 CLOUD_SSHKEY_FILE=${CLOUD_DIR}/${CLOUD}.sshkey
