@@ -74,7 +74,8 @@ CONFIG_AWS_FILE=${CONFIG_DIR}/aws
 dummy		    := $(shell touch artifacts)
 include ./artifacts
 
-export APP_VERSION :=  $(shell git describe --tags )
+SCW_SERVER_CONF={"name": "${APP}", "image": "${SCW_IMAGE_ID}", "commercial_type": "${SCW_FLAVOR}", "organization": "${SCW_ORGANIZATION_ID}"}
+APP_VERSION :=  $(shell git describe --tags )
 CLOUD_SSHKEY_FILE=${CLOUD_DIR}/${CLOUD}.sshkey
 CLOUD_SERVER_ID_FILE=${CLOUD_DIR}/${CLOUD}.id
 CLOUD_HOST_FILE=${CLOUD_DIR}/${CLOUD}.host
@@ -276,9 +277,11 @@ cloud-instance-down: ${CLOUD}-instance-delete
 #Scaleway section
 SCW-instance-order: ${CLOUD_DIR}
 	@if [ ! -f ${CLOUD_SERVER_ID_FILE} ]; then\
+		SCW_SERVER_OPTS=$$(echo '${SCW_SERVER_CONF}' '${SCW_SERVER_OPTS}' | jq -cs add);\
+		echo '${SCW_SERVER_CONF}'" ... $$SCW_SERVER_OPTS";\
 		curl -s ${SCW_API}/servers -H "X-Auth-Token: ${SCW_SECRET_TOKEN}" \
 			-H "Content-Type: application/json" \
-			-d '{"name": "${APP}", "image": "${SCW_IMAGE_ID}", "commercial_type": "${SCW_FLAVOR}", "organization": "${SCW_ORGANIZATION_ID}" ${SCW_SERVER_OPTS}}' \
+			-d "$$SCW_SERVER_OPTS" \
 		| jq -r '.server.id' > ${CLOUD_SERVER_ID_FILE};\
 	fi
 
