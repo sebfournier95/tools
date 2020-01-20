@@ -260,7 +260,7 @@ ${CLOUD}-instance-wait-ssh: ${CLOUD_FIRST_USER_FILE} ${CLOUD_HOST_FILE}
 		(ssh-keygen -R $$HOST > /dev/null 2>&1) || true;\
 		timeout=${SSH_TIMEOUT} ; ret=1 ;\
 		until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do\
-			((ssh ${SSHOPTS} -o ConnectTimeout=1 $$SSHUSER@$$HOST sleep 1) );\
+			((ssh ${SSHOPTS} $$SSHUSER@$$HOST sleep 1) );\
 			ret=$$? ; \
 			if [ "$$ret" -ne "0" ] ; then\
 				echo "waiting for ssh service on ${CLOUD} instance - $$timeout" ; \
