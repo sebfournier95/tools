@@ -75,7 +75,7 @@ dummy		    := $(shell touch artifacts)
 include ./artifacts
 
 SSHOPTS=-o "StrictHostKeyChecking no" -i ${SSHKEY} ${CLOUD_SSHOPTS}
-SCW_SERVER_CONF={"name": "${APP}", "tags": ["${GIT_BRANCH}","${APP_VERSION}"]\
+SCW_SERVER_CONF={"name": "${APP}", "tags": ["${GIT_BRANCH}","${APP_VERSION}"],\
 "image": "${SCW_IMAGE_ID}", "commercial_type": "${SCW_FLAVOR}", "organization": "${SCW_ORGANIZATION_ID}"}
 
 export APP_VERSION :=  $(shell git describe --tags)
