@@ -76,7 +76,7 @@ include ./artifacts
 
 SSHOPTS=-o "StrictHostKeyChecking no" -i ${SSHKEY} ${CLOUD_SSHOPTS}
 SCW_SERVER_CONF={"name": "${APP}", "image": "${SCW_IMAGE_ID}", "commercial_type": "${SCW_FLAVOR}", "organization": "${SCW_ORGANIZATION_ID}"}
-APP_VERSION :=  $(shell git describe --tags )
+export APP_VERSION :=  $(shell git describe --tags)
 CLOUD_SSHKEY_FILE=${CLOUD_DIR}/${CLOUD}.sshkey
 CLOUD_SERVER_ID_FILE=${CLOUD_DIR}/${CLOUD}.id
 CLOUD_HOST_FILE=${CLOUD_DIR}/${CLOUD}.host
