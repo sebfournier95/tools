@@ -284,7 +284,9 @@ cloud-instance-down: ${CLOUD}-instance-delete
 SCW-instance-order: ${CLOUD_DIR}
 	@if [ ! -f ${CLOUD_SERVER_ID_FILE} ]; then\
 		SCW_SERVER_OPTS=$$(echo '${SCW_SERVER_CONF}' '${SCW_SERVER_OPTS}' | jq -cs add);\
-		echo '${SCW_SERVER_CONF}'" ... $$SCW_SERVER_OPTS";\
+		if [ ! -z "${VERBOSE}" ]; then\
+			echo "SCW server options $$SCW_SERVER_OPTS";\
+		fi;\
 		curl -s ${SCW_API}/servers -H "X-Auth-Token: ${SCW_SECRET_TOKEN}" \
 			-H "Content-Type: application/json" \
 			-d "$$SCW_SERVER_OPTS" \
@@ -339,7 +341,7 @@ SCW-instance-delete:
 			)\
 		) || (echo scaleway error while terminating server && exit 1);\
 	else\
-		(echo no ${CLOUD_SERVER_ID_FILE} for deletion && exit 1);\
+		(echo no ${CLOUD_SERVER_ID_FILE} for deletion);\
 	fi
 
 
