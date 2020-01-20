@@ -522,7 +522,7 @@ datagouv-get-files: ${DATAGOUV_CATALOG}
 		echo no new file downloaded from datagouv;\
 	fi
 
-remote-config-proxy: ${CLOUD_FIRST_USER_FILE}
+remote-config-proxy: ${CONFIG_DIR} ${CLOUD_FIRST_USER_FILE}
 	@if [ ! -f "${CONFIG_REMOTE_PROXY_FILE}" ]; then\
 		if [ ! -z "${remote_http_proxy}" ]; then\
 			H=$$(cat ${CLOUD_HOST_FILE});\
