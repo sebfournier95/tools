@@ -30,6 +30,9 @@ before_script:
   - eval "$(ssh-agent -s)"
   - chmod 600 /tmp/id_rsa_matchID
   - ssh-add /tmp/id_rsa_matchID
+  - echo "Host * !""$BASTION" > ~/.ssh/config
+  - echo "   ProxyCommand ssh $BASTION nc %h %p" >> ~/.ssh/config
+  - cat ~/.ssh/config
 
 
 script:
@@ -39,6 +42,6 @@ script:
 after_success:
   - if [[ "$TRAVIS_BRANCH" == "master" ]]; then
       make docker-push GIT_BRANCH="$TRAVIS_BRANCH";
-      make remote-config-test GIT_BRANCH="$TRAVIS_BRANCH" CLOUD_SSHOPTS="$CLOUD_SSHOPTS";
+      make remote-config-test GIT_BRANCH="$TRAVIS_BRANCH";
     fi
 
