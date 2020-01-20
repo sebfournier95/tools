@@ -222,7 +222,7 @@ ${CLOUD_HOST_FILE}: ${CLOUD_DIR} ${CLOUD}-instance-get-host
 	@echo ${CLOUD} ip: $$(cat ${CLOUD_HOST_FILE})
 
 ${CLOUD}-instance-wait-ssh: ${CLOUD_FIRST_USER_FILE} ${CLOUD_HOST_FILE}
-	@if [ ! -f "${CLOUD_UP_FILE}" ];then\
+	if [ ! -f "${CLOUD_UP_FILE}" ];then\
 		HOST=$$(cat ${CLOUD_HOST_FILE});\
 		SSHUSER=$$(cat ${CLOUD_FIRST_USER_FILE});\
 		(ssh-keygen -R $$HOST > /dev/null 2>&1) || true;\
