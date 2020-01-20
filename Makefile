@@ -521,7 +521,7 @@ remote-actions: ${CONFIG_APP_FILE}
 		H=$$(cat ${CLOUD_HOST_FILE});\
 		U=$$(cat ${CLOUD_USER_FILE});\
 		if [ "${ACTIONS}" != "" ];then\
-			ssh ${SSHOPTS} $$U@$$H make -C ${APP_GROUP}/${APP} ${ACTIONS} aws_access_key_id=${aws_access_key_id} aws_secret_access_key=${aws_secret_access_key};\
+			ssh ${SSHOPTS} $$U@$$H make -C ${APP_GROUP}/${APP} ${ACTIONS} aws_access_key_id=${aws_access_key_id} aws_secret_access_key=${aws_secret_access_key} ${MAKEOVERRIDES};\
 		fi
 
 datagouv-to-s3: s3-get-catalog datagouv-get-files
