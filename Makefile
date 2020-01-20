@@ -520,7 +520,30 @@ datagouv-get-files: ${DATAGOUV_CATALOG}
 		echo no new file downloaded from datagouv;\
 	fi
 
-${CONFIG_REMOTE_FILE}: cloud-instance-up ${CONFIG_DIR}
+remote-config-proxy: ${CLOUD_FIRST_USER_FILE}
+	@if [ ! -f "${CONFIG_REMOTE_PROXY_FILE}" ]; then\
+		if [ ! -z "${remote_http_proxy}" ]; then\
+			H=$$(cat ${CLOUD_HOST_FILE});\
+			U=$$(cat ${CLOUD_FIRST_USER_FILE});\
+			if [ "${CLOUD}" == "SCW" ];then\
+				sudo="";\
+			else\
+				sudo=sudo;\
+			fi;\
+			if [ ! -z "${remote_http_proxy}" ];then\
+				(echo "http_proxy=${remote_http_proxy}" | ssh ${SSHOPTS} $$U@$$H $$sudo tee -a /etc/environment);\
+			fi;\
+			if [ ! -z "${remote_https_proxy}" ];then\
+				(echo "https_proxy=${remote_https_proxy}" | ssh ${SSHOPTS} $$U@$$H $$sudo tee -a /etc/environment);\
+			fi;\
+			if [ ! -z "${remote_no_proxy}" ];then\
+				(echo "no_proxy=${remote_no_proxy}" | ssh ${SSHOPTS} $$U@$$H $$sudo tee -a /etc/environment);\
+			fi;\
+		fi;\
+		touch ${CONFIG_REMOTE_PROXY_FILE};\
+	fi;
+
+${CONFIG_REMOTE_FILE}: cloud-instance-up remote-config-proxy ${CONFIG_DIR}
 		@\
 		if [ ! -f "${CONFIG_REMOTE_FILE}" ];then\
 			H=$$(cat ${CLOUD_HOST_FILE});\
@@ -539,9 +562,10 @@ ${CONFIG_REMOTE_FILE}: cloud-instance-up ${CONFIG_DIR}
 
 remote-config: ${CONFIG_REMOTE_FILE}
 
-remote-deploy: ${CONFIG_APP_FILE}
+remote-deploy: remote-config ${CONFIG_APP_FILE}
 
 remote-clean: cloud-instance-down
+	@(rm ${CONFIG_REMOTE_FILE} ${CONFIG_REMOTE_PROXY_FILE} > /dev/null 2>&1) || true
 
 ${CONFIG_APP_FILE}: ${CONFIG_REMOTE_FILE}
 		@\
@@ -555,7 +579,7 @@ ${CONFIG_APP_FILE}: ${CONFIG_REMOTE_FILE}
 			touch ${CONFIG_APP_FILE};\
 		fi
 
-remote-actions: ${CONFIG_APP_FILE}
+remote-actions: remote-deploy
 		@\
 		H=$$(cat ${CLOUD_HOST_FILE});\
 		U=$$(cat ${CLOUD_USER_FILE});\
