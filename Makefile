@@ -65,6 +65,7 @@ CONFIG_INIT_FILE=${CONFIG_DIR}/init
 CONFIG_NEXT_FILE=${CONFIG_DIR}/next
 CONFIG_FILE=${CONFIG_DIR}/conf
 CONFIG_REMOTE_FILE=${CONFIG_DIR}/remote
+CONFIG_REMOTE_PROXY_FILE=${CONFIG_DIR}/remote.proxy
 CONFIG_TOOLS_FILE=${CONFIG_DIR}/${TOOLS}.deployed
 CONFIG_APP_FILE=${CONFIG_DIR}/${APP}.deployed
 CONFIG_DOCKER_FILE=${CONFIG_DIR}/docker
@@ -143,10 +144,10 @@ docker-install: ${CONFIG_DOCKER_FILE} docker-config-proxy
 
 docker-config-proxy:
 	if [ ! -z "${http_proxy}" ];then\
-		if [ ! -f "/etc/systemd/system/docker.service.d/http-proxy.conf"]; then\
+		if [ ! -f "/etc/systemd/system/docker.service.d/http-proxy.conf" ]; then\
 			sudo mkdir -p /etc/systemd/system/docker.service.d/;\
-			(echo "[Service]" | sudo tee -a /etc/systemd/system/docker.service.d/http-proxy.conf);\
-			(echo "Environment="HTTPS_PROXY=${http_proxy}" "HTTP_PROXY=${https_proxy}" | sudo tee -a /etc/systemd/system/docker.service.d/http-proxy.conf);\
+			(echo '[Service]' | sudo tee -a /etc/systemd/system/docker.service.d/http-proxy.conf);\
+			(echo 'Environment="HTTPS_PROXY=${http_proxy}" "HTTP_PROXY=${https_proxy}"' | sudo tee -a /etc/systemd/system/docker.service.d/http-proxy.conf);\
 			sudo systemctl daemon-reload;\
 			sudo systemctl restart docker;\
 		fi;\
@@ -257,9 +258,14 @@ ${CLOUD}-instance-wait-ssh: ${CLOUD_FIRST_USER_FILE} ${CLOUD_HOST_FILE}
 		(ssh-keygen -R $$HOST > /dev/null 2>&1) || true;\
 		timeout=${SSH_TIMEOUT} ; ret=1 ;\
 		until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do\
-			((ssh ${SSHOPTS} $$SSHUSER@$$HOST sleep 1) );\
+			((ssh ${SSHOPTS} -o ConnectTimeout=1 $$SSHUSER@$$HOST sleep 1) );\
 			ret=$$? ; \
-			if [ "$$ret" -ne "0" ] ; then echo "waiting for ssh service on ${CLOUD} instance - $$timeout" ; fi ;\
+			if [ "$$ret" -ne "0" ] ; then\
+				echo "waiting for ssh service on ${CLOUD} instance - $$timeout" ; \
+				if [ ! -z "${VERBOSE}" ];then\
+					echo 'cmd: ssh ${SSHOPTS} -o ConnectTimeout=1 '"$$SSHUSER@$$HOST"; \
+				fi;\
+			fi ;\
 			((timeout--)); sleep 1 ; \
 		done ;\
 		exit $$ret;\
