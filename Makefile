@@ -181,7 +181,9 @@ endif
 	@touch ${CONFIG_DOCKER_FILE}
 
 docker-build:
-	${DC} config
+	if [ ! -z "${VERBOSE"} ];then\
+		${DC} config;\
+	fi;
 	${DC} build $(DC_BUILD_ARGS)
 
 docker-tag:
