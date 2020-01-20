@@ -42,6 +42,6 @@ script:
 after_success:
   - if [[ "$TRAVIS_BRANCH" == "master" ]]; then
       make docker-push GIT_BRANCH="$TRAVIS_BRANCH";
-      make remote-config-test GIT_BRANCH="$TRAVIS_BRANCH" http_proxy=$HTTP_PROXY https_proxy=$HTTP_PROXY;
+      make remote-config-test GIT_BRANCH="$TRAVIS_BRANCH" remote_http_proxy=$REMOTE_HTTP_PROXY remote_https_proxy=$REMOTE_HTTP_PROXY;
     fi
 
