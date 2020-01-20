@@ -143,7 +143,7 @@ endif
 docker-install: ${CONFIG_DOCKER_FILE} docker-config-proxy
 
 docker-config-proxy:
-	if [ ! -z "${http_proxy}" ];then\
+	@if [ ! -z "${http_proxy}" ];then\
 		if [ ! -f "/etc/systemd/system/docker.service.d/http-proxy.conf" ]; then\
 			sudo mkdir -p /etc/systemd/system/docker.service.d/;\
 			(echo '[Service]' | sudo tee -a /etc/systemd/system/docker.service.d/http-proxy.conf);\
