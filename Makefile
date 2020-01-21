@@ -371,18 +371,13 @@ SCW-instance-wait-running: SCW-instance-start
 	fi
 
 SCW-instance-get-host: SCW-instance-wait-running
-	# method for getting acces from IP, now deprecated
-	# @if [ ! -f "${CLOUD_HOST_FILE}" ];then\
-	# 	SCW_SERVER_ID=$$(cat ${CLOUD_SERVER_ID_FILE});\
-	# 	curl -s ${SCW_API}/servers -H "X-Auth-Token: ${SCW_SECRET_TOKEN}" \
-	# 		| jq -cr  ".servers[] | select (.id == \"$$SCW_SERVER_ID\") | .${SCW_IP}" \
-	# 		> ${CLOUD_HOST_FILE};\
-	# fi
-	#
 	@if [ ! -f "${CLOUD_HOST_FILE}" ];then\
 		SCW_SERVER_ID=$$(cat ${CLOUD_SERVER_ID_FILE});\
-		echo $$SCW_SERVER_ID.${SCW_DOMAIN} > ${CLOUD_HOST_FILE};\
+		curl -s ${SCW_API}/servers -H "X-Auth-Token: ${SCW_SECRET_TOKEN}" \
+			| jq -cr  ".servers[] | select (.id == \"$$SCW_SERVER_ID\") | .${SCW_IP}" \
+			> ${CLOUD_HOST_FILE};\
 	fi
+
 
 SCW-instance-delete:
 	@if [ -f "${CLOUD_SERVER_ID_FILE}" ];then\
@@ -410,7 +405,9 @@ SCW-instance-get-tagged-ids:
 
 SCW-instance-get-tagged-hosts: SCW-instance-get-tagged-ids
 	@if [ ! -f "${CLOUD_TAGGED_HOSTS_FILE}" ];then\
-		cat ${CLOUD_TAGGED_IDS_FILE} | sed 's/$$/.${SCW_DOMAIN}/' > ${CLOUD_TAGGED_HOSTS_FILE};\
+		curl -s ${SCW_API}/servers -H "X-Auth-Token: ${SCW_SECRET_TOKEN}" -H "Content-Type: application/json"  \
+			| jq -cr '.servers[] | select(.name=="${APP}") | select (.tags[] | contains("${GIT_BRANCH}")) | select(.tags[] | contains("${APP_VERSION}")) | .${SCW_IP}'\
+			> ${CLOUD_TAGGED_HOSTS_FILE};\
 	fi
 
 SCW-instance-get-tagged-hosts-old: SCW-instance-get-tagged-ids-old
