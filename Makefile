@@ -286,6 +286,38 @@ cloud-instance-down: ${CLOUD}-instance-delete
 	@(rm ${CLOUD_UP_FILE} ${CLOUD_HOST_FILE} ${CLOUD_SERVER_ID_FILE} \
 		${CLOUD_FIRST_USER_FILE} ${CLOUD_USER_FILE} ${CLOUD_SSHKEY_FILE} > /dev/null 2>&1) || true
 
+cloud-instance-test-api-from-inside: ${CLOUD}-instance-get-tagged-hosts
+	@if [ -f "${CONFIG_APP_FILE}" ];then\
+		U=$$(cat ${CLOUD_USER_FILE});\
+		for H in $$(cat ${CLOUD_TAGGED_HOSTS_FILE});do\
+			((\
+				(\
+					if [ -z "${API_TEST_DATA}" ];then\
+						ssh ${SSHOPTS} $$U@$$H "curl -s --fail localhost:${PORT}/${API_TEST_PATH}";\
+					else\
+						echo '${API_TEST_DATA}' | ssh ${SSHOPTS} $$U@$$H "curl -s -XPOST --fail localhost:${PORT}/${API_TEST_PATH} -H 'Content-Type: application/json' -d @-";\
+					fi;\
+				)\
+				|\
+				(\
+					if [ ! -z "${API_TEST_JSON_PATH}" ];then\
+						(cat | jq -e '.${API_TEST_JSON_PATH}' > /dev/null 2>&1);\
+					else\
+						cat;\
+					fi;\
+				) && echo "api test on $$H (ssh) : ok"\
+			) || echo "api test on $$H (ssh) : ko");\
+		done;\
+	fi;
+
+
+cloud-instance-get-nginx-upstream-conf: ${CLOUD}-instance-get-tagged-hosts
+	@if [ ! -z "$$(cat ${CLOUD_TAGGED_HOSTS_FILE})" ]; then\
+		cat ${CLOUD_TAGGED_HOSTS_FILE} \
+		| awk 'BEGIN{print "upstream ${APP}-${GIT_BRANCH} {"}{print "      server " $$1 ":${PORT}"}END{print "}"}';\
+	fi;
+
+
 #Scaleway section
 SCW-instance-order: ${CLOUD_DIR}
 	@if [ ! -f ${CLOUD_SERVER_ID_FILE} ]; then\
