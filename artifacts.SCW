@@ -17,6 +17,7 @@ SCW_SSHUSER=ubuntu
 #choose public or private address
 SCW_IP=public_ip.address
 SCW_IP=private_ip
+SCW_DOMAIN=priv.cloud.scaleway.com
 #if private, you use probably use a bastion for proxyJump
 # CLOUD_SSHOPTS=-J bastion
 

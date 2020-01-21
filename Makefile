@@ -86,6 +86,8 @@ CLOUD_FIRST_USER_FILE=${CLOUD_DIR}/${CLOUD}.user.first
 CLOUD_USER_FILE=${CLOUD_DIR}/${CLOUD}.user
 CLOUD_UP_FILE=${CLOUD_DIR}/${CLOUD}.up
 CLOUD_HOSTNAME=${APP_GROUP}-${APP}
+CLOUD_TAGGED_IDS_FILE=${CLOUD_DIR}/${CLOUD}.tag.ids
+CLOUD_TAGGED_HOSTS_FILE=${CLOUD_DIR}/${CLOUD}.tag.hosts
 
 ${DATA_DIR}:
 	@if [ ! -d "${DATA_DIR}" ]; then mkdir -p ${DATA_DIR};fi
@@ -354,6 +356,22 @@ SCW-instance-delete:
 		(echo no ${CLOUD_SERVER_ID_FILE} for deletion);\
 	fi
 
+SCW-instance-get-tagged-ids:
+	@if [ ! -f "${CLOUD_TAGGED_IDS_FILE}" ];then\
+		curl -s ${SCW_API}/servers -H "X-Auth-Token: ${SCW_SECRET_TOKEN}" -H "Content-Type: application/json"  \
+			| jq -cr '.servers[] | select(.name=="${APP}") | select (.tags[] | contains("${GIT_BRANCH}")) | select(.tags[] | contains("${APP_VERSION}")) | .id'\
+			> ${CLOUD_TAGGED_IDS_FILE};\
+	fi
+
+SCW-instance-get-tagged-hosts: SCW-instance-get-tagged-ids
+	@if [ ! -f "${CLOUD_TAGGED_HOSTS_FILE}" ];then\
+		cat ${CLOUD_TAGGED_IDS_FILE} | sed 's/$$/.${SCW_DOMAIN}/' > ${CLOUD_TAGGED_HOSTS_FILE};\
+	fi
+
+SCW-instance-get-tagged-hosts-old: SCW-instance-get-tagged-ids-old
+	@if [ ! -f "${CLOUD_TAGGED_SERVERS_HOST_FILE}" ];then\
+		cat ${CLOUD_TAGGED_IDS_FILE} | sed 's/$$/.${SCW_DOMAIN}/' > ${CLOUD_TAGGED_HOSTS_FILE};\
+	fi
 
 #Openstack section
 OS-add-sshkey: ${SSHKEY} ${CLOUD_DIR}
