@@ -324,11 +324,17 @@ SCW-instance-wait-running: SCW-instance-start
 	fi
 
 SCW-instance-get-host: SCW-instance-wait-running
+	# method for getting acces from IP, now deprecated
+	# @if [ ! -f "${CLOUD_HOST_FILE}" ];then\
+	# 	SCW_SERVER_ID=$$(cat ${CLOUD_SERVER_ID_FILE});\
+	# 	curl -s ${SCW_API}/servers -H "X-Auth-Token: ${SCW_SECRET_TOKEN}" \
+	# 		| jq -cr  ".servers[] | select (.id == \"$$SCW_SERVER_ID\") | .${SCW_IP}" \
+	# 		> ${CLOUD_HOST_FILE};\
+	# fi
+	#
 	@if [ ! -f "${CLOUD_HOST_FILE}" ];then\
 		SCW_SERVER_ID=$$(cat ${CLOUD_SERVER_ID_FILE});\
-		curl -s ${SCW_API}/servers -H "X-Auth-Token: ${SCW_SECRET_TOKEN}" \
-			| jq -cr  ".servers[] | select (.id == \"$$SCW_SERVER_ID\") | .${SCW_IP}" \
-			> ${CLOUD_HOST_FILE};\
+		echo $$SCW_SERVER_ID.${SCW_DOMAIN} > ${CLOUD_HOST_FILE};\
 	fi
 
 SCW-instance-delete:
