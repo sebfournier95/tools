@@ -13,6 +13,7 @@ USE_TTY := $(shell test -t 1 && USE_TTY="-t")
 #base paths
 APP_GROUP=matchID
 APP_GROUP_MAIL=matchid.project@gmail.com
+APP_GROUP_DOMAIN=matchid.io
 TOOLS = tools
 TOOLS_PATH := $(shell pwd)
 APP_GROUP_PATH := $(shell dirname ${TOOLS_PATH})
@@ -60,6 +61,8 @@ START_TIMEOUT = 120
 CLOUD_DIR=${TOOLS_PATH}/cloud
 CLOUD=SCW
 
+NGINX_DIR=${TOOLS_PATH}/nginx
+NGINX_UPSTREAM_REMOTE_PATH=/etc/nginx/conf.d
 CONFIG_DIR=${TOOLS_PATH}/configured
 CONFIG_INIT_FILE=${CONFIG_DIR}/init
 CONFIG_NEXT_FILE=${CONFIG_DIR}/next
@@ -88,6 +91,12 @@ CLOUD_UP_FILE=${CLOUD_DIR}/${CLOUD}.up
 CLOUD_HOSTNAME=${APP_GROUP}-${APP}
 CLOUD_TAGGED_IDS_FILE=${CLOUD_DIR}/${CLOUD}.tag.ids
 CLOUD_TAGGED_HOSTS_FILE=${CLOUD_DIR}/${CLOUD}.tag.hosts
+
+NGINX_UPSTREAM_FILE=${NGINX_DIR}/${GIT_BRANCH}.${APP}-upstream.conf
+NGINX_UPSTREAM_BACKUP=${NGINX_DIR}/${GIT_BRANCH}.${APP}-upstream.bak
+NGINX_UPSTREAM_REMOTE_FILE=${NGINX_UPSTREAM_REMOTE_PATH}/${GIT_BRANCH}.${APP}-upstream.conf
+NGINX_UPSTREAM_REMOTE_BACKUP=${NGINX_UPSTREAM_REMOTE_PATH}/${GIT_BRANCH}.${APP}-upstream.bak
+NGINX_UPSTREAM_APPLIED_FILE=${NGINX_DIR}/${GIT_BRANCH}.${APP}-upstream.ok
 
 ${DATA_DIR}:
 	@if [ ! -d "${DATA_DIR}" ]; then mkdir -p ${DATA_DIR};fi
@@ -286,35 +295,39 @@ cloud-instance-down: ${CLOUD}-instance-delete
 	@(rm ${CLOUD_UP_FILE} ${CLOUD_HOST_FILE} ${CLOUD_SERVER_ID_FILE} \
 		${CLOUD_FIRST_USER_FILE} ${CLOUD_USER_FILE} ${CLOUD_SSHKEY_FILE} > /dev/null 2>&1) || true
 
-cloud-instance-test-api-from-inside: ${CLOUD}-instance-get-tagged-hosts
-	@if [ -f "${CONFIG_APP_FILE}" ];then\
-		U=$$(cat ${CLOUD_USER_FILE});\
-		for H in $$(cat ${CLOUD_TAGGED_HOSTS_FILE});do\
-			((\
-				(\
-					if [ -z "${API_TEST_DATA}" ];then\
-						ssh ${SSHOPTS} $$U@$$H "curl -s --fail localhost:${PORT}/${API_TEST_PATH}";\
-					else\
-						echo '${API_TEST_DATA}' | ssh ${SSHOPTS} $$U@$$H "curl -s -XPOST --fail localhost:${PORT}/${API_TEST_PATH} -H 'Content-Type: application/json' -d @-";\
-					fi;\
-				)\
-				|\
-				(\
-					if [ ! -z "${API_TEST_JSON_PATH}" ];then\
-						(cat | jq -e '.${API_TEST_JSON_PATH}' > /dev/null 2>&1);\
-					else\
-						cat;\
-					fi;\
-				) && echo "api test on $$H (ssh) : ok"\
-			) || echo "api test on $$H (ssh) : ko");\
-		done;\
+nginx-dir:
+	@if [ ! -d ${NGINX_DIR} ]; then mkdir -p ${NGINX_DIR};fi
+
+nginx-dir-clean:
+	@if [ -d ${NGINX_DIR} ]; then (rm -rf ${NGINX_DIR} > /dev/null 2>&1);fi
+
+nginx-conf-create: ${CLOUD}-instance-get-tagged-hosts nginx-dir
+	@if [ ! -f "${NGINX_UPSTREAM_FILE}" ];then\
+		if [ ! -z "$$(cat ${CLOUD_TAGGED_HOSTS_FILE})" ]; then\
+			cat ${CLOUD_TAGGED_HOSTS_FILE} \
+				| awk 'BEGIN{print "upstream ${APP}-${GIT_BRANCH} {"}{print "      server " $$1 ":${PORT};"}END{print "}"}'\
+				> ${NGINX_UPSTREAM_FILE};\
+		fi;\
 	fi;
 
+nginx-conf-backup:
+	@if [ ! -z "${NGINX_HOST}" ];then\
+		if [ -f "${NGINX_UPSTREAM_FILE}" ];then\
+			((ssh ${SSHOPTS} ${NGINX_USER}@${NGINX_HOST} cat ${NGINX_UPSTREAM_REMOTE_FILE}) > ${NGINX_UPSTREAM_BACKUP});\
+			(ssh ${SSHOPTS} ${NGINX_USER}@${NGINX_HOST} sudo cp ${NGINX_UPSTREAM_REMOTE_FILE} ${NGINX_UPSTREAM_REMOTE_BACKUP});\
+		fi;\
+	fi;
 
-cloud-instance-get-nginx-upstream-conf: ${CLOUD}-instance-get-tagged-hosts
-	@if [ ! -z "$$(cat ${CLOUD_TAGGED_HOSTS_FILE})" ]; then\
-		cat ${CLOUD_TAGGED_HOSTS_FILE} \
-		| awk 'BEGIN{print "upstream ${APP}-${GIT_BRANCH} {"}{print "      server " $$1 ":${PORT}"}END{print "}"}';\
+nginx-conf-apply: nginx-conf-create nginx-conf-backup
+	@if [ ! -f "${NGINX_UPSTREAM_APPLIED_FILE}" ];then\
+		if [ ! -z "${NGINX_HOST}" ];then\
+			if [ -f "${NGINX_UPSTREAM_FILE}" ];then\
+				(cat ${NGINX_UPSTREAM_FILE}\
+					| ssh ${SSHOPTS} ${NGINX_USER}@${NGINX_HOST} "sudo tee ${NGINX_UPSTREAM_REMOTE_FILE}") &&\
+				(ssh ${SSHOPTS} ${NGINX_USER}@${NGINX_HOST} sudo service nginx reload);\
+			fi;\
+		fi;\
+		touch ${NGINX_UPSTREAM_APPLIED_FILE};\
 	fi;
 
 
@@ -646,6 +659,53 @@ remote-actions: remote-deploy
 		if [ "${ACTIONS}" != "" ];then\
 			ssh ${SSHOPTS} $$U@$$H make -C ${APP_GROUP}/${APP} ${ACTIONS} aws_access_key_id=${aws_access_key_id} aws_secret_access_key=${aws_secret_access_key} ${MAKEOVERRIDES};\
 		fi
+
+remote-test-api-in-vpc: ${CLOUD}-instance-get-tagged-hosts
+	@if [ -f "${CONFIG_APP_FILE}" ];then\
+		U=$$(cat ${CLOUD_USER_FILE});\
+		for H in $$(cat ${CLOUD_TAGGED_HOSTS_FILE});do\
+			((\
+				(\
+					if [ -z "${API_TEST_DATA}" ];then\
+						ssh ${SSHOPTS} $$U@$$H "curl -s --fail localhost:${PORT}/${API_TEST_PATH}";\
+					else\
+						echo '${API_TEST_DATA}' | ssh ${SSHOPTS} $$U@$$H "curl -s -XPOST --fail localhost:${PORT}/${API_TEST_PATH} -H 'Content-Type: application/json' -d @-";\
+					fi;\
+				)\
+				|\
+				(\
+					if [ ! -z "${API_TEST_JSON_PATH}" ];then\
+						(cat | jq -e '.${API_TEST_JSON_PATH}' > /dev/null 2>&1);\
+					else\
+						(cat > /dev/null 2>&1);\
+					fi;\
+				) && echo "api test on $$H (ssh) : ok"\
+			) || (echo "api test on $$H (ssh) : ko" && exit 1));\
+		done;\
+	fi;
+
+remote-test-api:
+	@if [ ! -f "${NGINX_UPSTREAM_APPLIED_FILE}" ];then\
+		echo "please make nginx-conf-apply first";\
+	else\
+		((\
+			(\
+				if [ -z "${API_TEST_DATA}" ];then\
+					curl -s --fail https://${APP_DNS}/${API_TEST_PATH};\
+				else\
+					echo '${API_TEST_DATA}' | curl -s -XPOST --fail https://${APP_DNS}/${API_TEST_PATH} -H 'Content-Type: application/json' -d @-;\
+				fi;\
+			)\
+			|\
+			(\
+				if [ ! -z "${API_TEST_JSON_PATH}" ];then\
+					(cat | jq -e '.${API_TEST_JSON_PATH}');\
+				else\
+					(cat | egrep '.');\
+				fi;\
+			) && echo "api test on https://${APP_DNS} : ok"\
+		) || (echo "api test on https://${APP_DNS} : ko" && exit 1));\
+	fi;
 
 datagouv-to-s3: s3-get-catalog datagouv-get-files
 	@for file in $$(ls ${DATA_DIR} | egrep '${FILES_TO_SYNC}');do\
