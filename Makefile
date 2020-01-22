@@ -91,6 +91,8 @@ CLOUD_UP_FILE=${CLOUD_DIR}/${CLOUD}.up
 CLOUD_HOSTNAME=${APP_GROUP}-${APP}
 CLOUD_TAGGED_IDS_FILE=${CLOUD_DIR}/${CLOUD}.tag.ids
 CLOUD_TAGGED_HOSTS_FILE=${CLOUD_DIR}/${CLOUD}.tag.hosts
+CLOUD_TAGGED_IDS_INVALID_FILE=${CLOUD_DIR}/${CLOUD}.tag.ids.ko
+CLOUD_TAGGED_HOSTS_INVALID_FILE=${CLOUD_DIR}/${CLOUD}.tag.hosts.ko
 
 NGINX_UPSTREAM_FILE=${NGINX_DIR}/${GIT_BRANCH}.${APP}-upstream.conf
 NGINX_UPSTREAM_BACKUP=${NGINX_DIR}/${GIT_BRANCH}.${APP}-upstream.bak
@@ -295,6 +297,8 @@ cloud-instance-down: ${CLOUD}-instance-delete
 	@(rm ${CLOUD_UP_FILE} ${CLOUD_HOST_FILE} ${CLOUD_SERVER_ID_FILE} \
 		${CLOUD_FIRST_USER_FILE} ${CLOUD_USER_FILE} ${CLOUD_SSHKEY_FILE} > /dev/null 2>&1) || true
 
+cloud-instance-down-invalid: ${CLOUD}-instance-delete-invalid
+
 nginx-dir:
 	@if [ ! -d ${NGINX_DIR} ]; then mkdir -p ${NGINX_DIR};fi
 
@@ -396,23 +400,54 @@ SCW-instance-delete:
 		(echo no ${CLOUD_SERVER_ID_FILE} for deletion);\
 	fi
 
-SCW-instance-get-tagged-ids:
+SCW-instance-delete-invalid: SCW-instance-get-tagged-ids-invalid
+	@if [ -f "${CLOUD_TAGGED_IDS_INVALID_FILE}" ];then\
+		if [ -s "${CLOUD_TAGGED_IDS_INVALID_FILE}" ];then\
+			for SCW_SERVER_ID in $$(cat ${CLOUD_TAGGED_IDS_INVALID_FILE}); do\
+				(\
+					(\
+						curl -s --fail ${SCW_API}/servers/$$SCW_SERVER_ID/action -H "X-Auth-Token: ${SCW_SECRET_TOKEN}" \
+							-H "Content-Type: application/json" -d '{"action": "terminate"}' > /dev/null \
+					) \
+				&& \
+					(\
+						echo scaleway server $$SCW_SERVER_ID terminating\
+					)\
+				) || (echo scaleway error while terminating server && exit 1);\
+			done;\
+		else\
+			echo "no invalid server to delete";\
+		fi;\
+	else\
+		(echo no ${CLOUD_TAGGED_IDS_INVALID_FILE} for deletion);\
+	fi
+
+SCW-instance-get-tagged-ids: ${CLOUD_DIR}
 	@if [ ! -f "${CLOUD_TAGGED_IDS_FILE}" ];then\
 		curl -s ${SCW_API}/servers -H "X-Auth-Token: ${SCW_SECRET_TOKEN}" -H "Content-Type: application/json"  \
-			| jq -cr '.servers[] | select(.name=="${APP}") | select (.tags[] | contains("${GIT_BRANCH}")) | select(.tags[] | contains("${APP_VERSION}")) | .id'\
+			| jq -cr '.servers[] | select(.name=="${APP}" and (.tags[0] | contains("${GIT_BRANCH}")) and (.tags[1] | contains("${APP_VERSION}"))) | .id'\
 			> ${CLOUD_TAGGED_IDS_FILE};\
+	fi
+
+SCW-instance-get-tagged-ids-invalid: ${CLOUD_DIR}
+	@if [ ! -f "${CLOUD_TAGGED_IDS_INVALID_FILE}" ];then\
+		curl -s ${SCW_API}/servers -H "X-Auth-Token: ${SCW_SECRET_TOKEN}" -H "Content-Type: application/json"  \
+			| jq -cr '.servers[] | select(.name=="${APP}" and (.tags[0] | contains("${GIT_BRANCH}")) and (.tags[1] | contains("${APP_VERSION}") | not)) | .id'\
+			> ${CLOUD_TAGGED_IDS_INVALID_FILE};\
 	fi
 
 SCW-instance-get-tagged-hosts: SCW-instance-get-tagged-ids
 	@if [ ! -f "${CLOUD_TAGGED_HOSTS_FILE}" ];then\
 		curl -s ${SCW_API}/servers -H "X-Auth-Token: ${SCW_SECRET_TOKEN}" -H "Content-Type: application/json"  \
-			| jq -cr '.servers[] | select(.name=="${APP}") | select (.tags[] | contains("${GIT_BRANCH}")) | select(.tags[] | contains("${APP_VERSION}")) | .${SCW_IP}'\
+			| jq -cr '.servers[] | select(.name=="${APP}" and (.tags[0] | contains("${GIT_BRANCH}")) and (.tags[1] | contains("${APP_VERSION}"))) | .${SCW_IP}'\
 			> ${CLOUD_TAGGED_HOSTS_FILE};\
 	fi
 
-SCW-instance-get-tagged-hosts-old: SCW-instance-get-tagged-ids-old
-	@if [ ! -f "${CLOUD_TAGGED_SERVERS_HOST_FILE}" ];then\
-		cat ${CLOUD_TAGGED_IDS_FILE} | sed 's/$$/.${SCW_DOMAIN}/' > ${CLOUD_TAGGED_HOSTS_FILE};\
+SCW-instance-get-tagged-hosts-invalid: SCW-instance-get-tagged-ids-invalid
+	@if [ ! -f "${CLOUD_TAGGED_HOSTS_INVALID_FILE}" ];then\
+		curl -s ${SCW_API}/servers -H "X-Auth-Token: ${SCW_SECRET_TOKEN}" -H "Content-Type: application/json"  \
+			| jq -cr '.servers[] | select(.name=="${APP}" and (.tags[0] | contains("${GIT_BRANCH}")) and (.tags[1] | contains("${APP_VERSION}") | not)) | .${SCW_IP}'\
+			> ${CLOUD_TAGGED_HOSTS_INVALID_FILE};\
 	fi
 
 #Openstack section
