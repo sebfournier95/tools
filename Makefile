@@ -661,47 +661,76 @@ remote-test-api-in-vpc: ${CLOUD}-instance-get-tagged-hosts
 	@if [ -f "${CONFIG_APP_FILE}" ];then\
 		U=$$(cat ${CLOUD_USER_FILE});\
 		for H in $$(cat ${CLOUD_TAGGED_HOSTS_FILE});do\
-			((\
+			(\
 				(\
-					if [ -z "${API_TEST_DATA}" ];then\
-						ssh ${SSHOPTS} $$U@$$H "curl -s --fail localhost:${PORT}/${API_TEST_PATH}";\
-					else\
-						echo '${API_TEST_DATA}' | ssh ${SSHOPTS} $$U@$$H "curl -s -XPOST --fail localhost:${PORT}/${API_TEST_PATH} -H 'Content-Type: application/json' -d @-";\
-					fi;\
+					((\
+						if [ -z "${API_TEST_DATA}" ];then\
+							ssh ${SSHOPTS} $$U@$$H "curl -s --fail localhost:${PORT}/${API_TEST_PATH}";\
+						else\
+							echo '${API_TEST_DATA}' | ssh ${SSHOPTS} $$U@$$H "curl -s -XPOST --fail localhost:${PORT}/${API_TEST_PATH} -H 'Content-Type: application/json' -d @-";\
+						fi;\
+					) || (echo "api test on $$H (ssh) localhost:${PORT}/${API_TEST_PATH} : ko" && exit 1))\
+					|\
+					(\
+						if [ ! -z "${API_TEST_JSON_PATH}" ];then\
+							(cat | jq -e '.${API_TEST_JSON_PATH}' > /dev/null 2>&1);\
+						else\
+						(	cat | egrep -v '^api test on.*ko$$' > /dev/null 2>&1);\
+						fi;\
+					)\
 				)\
-				|\
-				(\
-					if [ ! -z "${API_TEST_JSON_PATH}" ];then\
-						(cat | jq -e '.${API_TEST_JSON_PATH}' > /dev/null 2>&1);\
-					else\
-						(cat > /dev/null 2>&1);\
-					fi;\
-				) && echo "api test on $$H (ssh) : ok"\
-			) || (echo "api test on $$H (ssh) : ko" && exit 1));\
+				&& (echo "api test on $$H (ssh) localhost:${PORT}/${API_TEST_PATH} : ok")\
+			) || (echo "api test on $$H (ssh) localhost:${PORT}/${API_TEST_PATH} : ko" && exit 1);\
 		done;\
 	fi;
+
+
+local-test-api:
+	@(\
+		(\
+			((\
+				if [ -z "${API_TEST_DATA}" ];then\
+					curl -s --fail localhost:${PORT}/${API_TEST_PATH};\
+				else\
+					echo '${API_TEST_DATA}' | curl -s -XPOST --fail localhost:${PORT}/${API_TEST_PATH} -H 'Content-Type: application/json' -d @-;\
+				fi;\
+			) || (echo "api test on localhost:${PORT}/${API_TEST_PATH} : ko" && exit 1))\
+			|\
+			(\
+				if [ ! -z "${API_TEST_JSON_PATH}" ];then\
+					(cat | jq -e '.${API_TEST_JSON_PATH}' > /dev/null 2>&1);\
+				else\
+					(cat | egrep -v '^api test on.*ko$$' > /dev/null 2>&1);\
+				fi;\
+			)\
+		)\
+		&& (echo "api test on localhost:${PORT}/${API_TEST_PATH} : ok")\
+	) || (echo "api test on localhost:${PORT}/${API_TEST_PATH} : ko" && exit 1);
 
 remote-test-api:
 	@if [ ! -f "${NGINX_UPSTREAM_APPLIED_FILE}" ];then\
 		echo "please make nginx-conf-apply first";\
 	else\
-		((\
+		(\
 			(\
-				if [ -z "${API_TEST_DATA}" ];then\
-					curl -s --fail https://${APP_DNS}/${API_TEST_PATH};\
-				else\
-					echo '${API_TEST_DATA}' | curl -s -XPOST --fail https://${APP_DNS}/${API_TEST_PATH} -H 'Content-Type: application/json' -d @-;\
-				fi;\
+				((\
+					if [ -z "${API_TEST_DATA}" ];then\
+						curl -s --fail https://${APP_DNS}/${API_TEST_PATH};\
+					else\
+						echo '${API_TEST_DATA}' | curl -s -XPOST --fail https://${APP_DNS}/${API_TEST_PATH} -H 'Content-Type: application/json' -d @-;\
+					fi;\
+				) || (echo "api test on https://${APP_DNS}/${API_TEST_PATH} : ko" && exit 1))\
+				|\
+				(\
+					if [ ! -z "${API_TEST_JSON_PATH}" ];then\
+						(cat | jq -e '.${API_TEST_JSON_PATH}' > /dev/null 2>&1);\
+					else\
+						(cat | egrep -v '^api test on.*ko$$' > /dev/null 2>&1);\
+					fi;\
+				)\
 			)\
-			|\
-			(\
-				if [ ! -z "${API_TEST_JSON_PATH}" ];then\
-					(cat | jq -e '.${API_TEST_JSON_PATH}');\
-				else\
-					(cat | egrep '.');\
-				fi;\
-			) && echo "api test on https://${APP_DNS} : ok"\
-		) || (echo "api test on https://${APP_DNS} : ko" && exit 1));\
+			&& (echo "api test on https://${APP_DNS}/${API_TEST_PATH} : ok")\
+		) || (echo "api test on https://${APP_DNS}/${API_TEST_PATH} : ko" && exit 1);\
 	fi;
 
 datagouv-to-s3: s3-get-catalog datagouv-get-files
