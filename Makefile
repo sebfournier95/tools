@@ -700,9 +700,9 @@ remote-test-api-in-vpc: ${CLOUD}-instance-get-tagged-hosts
 				(\
 					((\
 						if [ -z "${API_TEST_DATA}" ];then\
-							ssh ${SSHOPTS} $$U@$$H "curl -s --fail localhost:${PORT}/${API_TEST_PATH}";\
+							ssh ${SSHOPTS} $$U@$$H "curl --noproxy '*' -s --fail localhost:${PORT}/${API_TEST_PATH}";\
 						else\
-							echo '${API_TEST_DATA}' | ssh ${SSHOPTS} $$U@$$H "curl -s -XPOST --fail localhost:${PORT}/${API_TEST_PATH} -H 'Content-Type: application/json' -d @-";\
+							echo '${API_TEST_DATA}' | ssh ${SSHOPTS} $$U@$$H "curl --noproxy '*' -s -XPOST --fail localhost:${PORT}/${API_TEST_PATH} -H 'Content-Type: application/json' -d @-";\
 						fi;\
 					) || (echo "api test on $$H (ssh) localhost:${PORT}/${API_TEST_PATH} : ko" && exit 1))\
 					|\
@@ -725,9 +725,9 @@ local-test-api:
 		(\
 			((\
 				if [ -z "${API_TEST_DATA}" ];then\
-					curl -s --fail localhost:${PORT}/${API_TEST_PATH};\
+					curl --noproxy '*' -s --fail localhost:${PORT}/${API_TEST_PATH};\
 				else\
-					echo '${API_TEST_DATA}' | curl -s -XPOST --fail localhost:${PORT}/${API_TEST_PATH} -H 'Content-Type: application/json' -d @-;\
+					echo '${API_TEST_DATA}' | curl --noproxy '*' -s -XPOST --fail localhost:${PORT}/${API_TEST_PATH} -H 'Content-Type: application/json' -d @-;\
 				fi;\
 			) || (echo "api test on localhost:${PORT}/${API_TEST_PATH} : ko" && exit 1))\
 			|\
