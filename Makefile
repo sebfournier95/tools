@@ -772,8 +772,8 @@ remote-install-monitor-nq:
 	if [ ! -z "${NQ_TOKEN}" -a -f "${CONFIG_REMOTE_FILE}" ];then\
 		H=$$(cat ${CLOUD_HOST_FILE});\
 		U=$$(cat ${CLOUD_USER_FILE});\
-		ssh ${SSHOPTS} $$U@$$H "curl -s https://raw.github.com/nodequery/nq-agent/master/nq-install.sh -o ${APP_GROUP}/${TOOLS}/nq-install.sh";\
-		ssh ${SSHOPTS} $$U@$$H sudo bash ${APP_GROUP}/${TOOLS}/nq-install.sh ${NQ_TOKEN};\
+		ssh ${SSHOPTS} $$U@$$H "curl -sL https://raw.github.com/nodequery/nq-agent/master/nq-install.sh -o ${APP_GROUP}/${TOOLS}/nq-install.sh";\
+		ssh ${SSHOPTS} $$U@$$H "sudo bash ${APP_GROUP}/${TOOLS}/nq-install.sh ${NQ_TOKEN}";\
 	fi
 
 
