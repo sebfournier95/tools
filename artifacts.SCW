@@ -4,6 +4,12 @@ SCW_API=https://api.scaleway.com/instance/v1/zones/fr-par-1
 
 #ubuntu 18.04
 
+#C2S low cost 4vCPU 8Go ubuntu 18.04 50Go
+SCW_IMAGE_ID=f974feac-abae-4365-b988-8ec7d1cec10d
+SCW_FLAVOR=C2S
+#C2M low cost 8vCPU 16Go ubuntu 18.04 50Go
+SCW_IMAGE_ID=f974feac-abae-4365-b988-8ec7d1cec10d
+SCW_FLAVOR=C2M
 #general usage 4vCPU 16Go with ubuntu 18.04 50Go
 SCW_IMAGE_ID=d4067cdc-dc9d-4810-8a26-0dae51d7df42
 SCW_FLAVOR=GP1-XS
