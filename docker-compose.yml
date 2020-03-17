@@ -4,7 +4,7 @@ services:
   tools:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.${CLOUD_CLI}
       args:
         http_proxy: ${http_proxy}
         https_proxy: ${https_proxy}

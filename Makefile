@@ -16,8 +16,9 @@ APP_GROUP_MAIL=matchid.project@gmail.com
 APP_GROUP_DOMAIN=matchid.io
 TOOLS = tools
 TOOLS_PATH := $(shell pwd)
+export CLOUD_CLI=aws
 APP_GROUP_PATH := $(shell dirname ${TOOLS_PATH})
-export APP = ${TOOLS}
+export APP = ${CLOUD_CLI}
 export APP_PATH = ${TOOLS_PATH}
 
 GIT_ROOT=https://github.com/matchid-project
@@ -45,7 +46,7 @@ include ./artifacts.EC2.outscale
 include ./artifacts.OS.ovh
 include ./artifacts.SCW
 
-S3_BUCKET=$(shell echo ${APP_GROUP} | tr '[:upper:]' '[:lower:]')
+S3_BUCKET = $(shell echo ${APP_GROUP} | tr '[:upper:]' '[:lower:]')
 S3_CATALOG = ${DATA_DIR}/${DATAGOUV_DATASET}.s3.list
 S3_CONFIG = ${TOOLS_PATH}/.aws/config
 
@@ -109,7 +110,7 @@ ${CONFIG_DIR}:
 ${CONFIG_INIT_FILE}: ${CONFIG_DIR} config-proxy tools-install docker-install
 	@touch ${CONFIG_INIT_FILE}
 
-${CONFIG_NEXT_FILE}: ${CONFIG_DIR} config-aws
+${CONFIG_NEXT_FILE}: ${CONFIG_DIR} config-${CLOUD_CLI}
 	@touch ${CONFIG_NEXT_FILE}
 
 config-init: ${CONFIG_INIT_FILE}
@@ -197,7 +198,7 @@ endif
 
 docker-build:
 	if [ ! -z "${VERBOSE}" ];then\
-		${DC} config;\
+		${DC} config -f ${DC_DIR}/Dockerfile.${CLOUD_CLI};\
 	fi;
 	${DC} build $(DC_BUILD_ARGS)
 
@@ -221,7 +222,8 @@ docker-login:
 	@echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
 
 docker-pull:
-	docker pull ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${APP_VERSION}
+	@docker pull ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${APP_VERSION}
+	@echo docker pulled ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${APP_VERSION}
 
 generate-test-file: ${DATA_DIR}
 	dd if=/dev/urandom bs=16M count=16 > ${FILE}
@@ -503,8 +505,7 @@ OS-instance-delete:
 
 #EC2 section
 
-${CONFIG_AWS_FILE}: ${CONFIG_DIR}
-	@docker pull matchid/tools && echo docker pulled matchid/tools
+${CONFIG_AWS_FILE}: ${CONFIG_DIR} docker-pull
 	@if [ ! -d "${HOME}/.aws" ];then\
 		echo create aws configuration;\
 		mkdir -p ${HOME}/.aws;\
