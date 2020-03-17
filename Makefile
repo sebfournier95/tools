@@ -198,7 +198,7 @@ endif
 
 docker-build:
 	if [ ! -z "${VERBOSE}" ];then\
-		${DC} config -f ${DC_DIR}/Dockerfile.${CLOUD_CLI};\
+		${DC} config;\
 	fi;
 	${DC} build $(DC_BUILD_ARGS)
 

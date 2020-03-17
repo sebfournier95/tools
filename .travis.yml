@@ -37,7 +37,7 @@ before_script:
 
 script:
   - git fetch && git describe --tags
-  - make docker-build
+  - make docker-build CLOUD_CLI=aws
 
 after_success:
   - if [[ "$TRAVIS_BRANCH" == "master" ]]; then
