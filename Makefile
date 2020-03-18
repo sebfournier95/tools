@@ -35,6 +35,7 @@ export DC_BUILD_ARGS = --pull --no-cache
 export DC := /usr/local/bin/docker-compose
 
 AWS=${TOOLS_PATH}/aws
+SWIFT=${TOOLS_PATH}/swift
 
 DATAGOUV_CATALOG = ${DATA_DIR}/${DATAGOUV_DATASET}.datagouv.list
 DATAGOUV_FILES_TO_SYNC=(^|\s)test.bin($$|\s)
@@ -49,6 +50,9 @@ include ./artifacts.SCW
 S3_BUCKET = $(shell echo ${APP_GROUP} | tr '[:upper:]' '[:lower:]')
 S3_CATALOG = ${DATA_DIR}/${DATAGOUV_DATASET}.s3.list
 S3_CONFIG = ${TOOLS_PATH}/.aws/config
+
+SWIFT_CONTAINER = $(shell echo ${APP_GROUP} | tr '[:upper:]' '[:lower:]')
+SWIFT_CATALOG = ${DATA_DIR}/${DATAGOUV_DATASET}.swift.list
 
 SSHID=${APP_GROUP_MAIL}
 SSHKEY_PRIVATE = ${HOME}/.ssh/id_rsa_${APP_GROUP}
@@ -74,6 +78,7 @@ CONFIG_TOOLS_FILE=${CONFIG_DIR}/${TOOLS}.deployed
 CONFIG_APP_FILE=${CONFIG_DIR}/${APP}.deployed
 CONFIG_DOCKER_FILE=${CONFIG_DIR}/docker
 CONFIG_AWS_FILE=${CONFIG_DIR}/aws
+CONFIG_SWIFT_FILE=${CONFIG_DIR}/SWIFT
 
 dummy		    := $(shell touch artifacts)
 include ./artifacts
@@ -503,6 +508,9 @@ OS-instance-get-host: OS-instance-wait-running
 OS-instance-delete:
 	@nova delete $$(cat ${CLOUD_SERVER_ID_FILE})
 
+
+${CONFIG_SWIFT_FILE}: ${CONFIG_DIR} docker-pull
+
 #EC2 section
 
 ${CONFIG_AWS_FILE}: ${CONFIG_DIR} docker-pull
@@ -516,6 +524,8 @@ ${CONFIG_AWS_FILE}: ${CONFIG_DIR} docker-pull
 	@touch ${CONFIG_AWS_FILE}
 
 config-aws: ${CONFIG_AWS_FILE}
+
+config-swift: ${CONFIG_SWIFT_FILE}
 
 EC2-add-sshkey:
 	@if [ ! -f "${CLOUD_SSHKEY_FILE}" ];then\
