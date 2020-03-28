@@ -244,6 +244,9 @@ docker-pull:
 	@docker pull ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${APP_VERSION}
 	@echo docker pulled ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${APP_VERSION}
 
+docker-logs-to-API:
+	@(${TOOLS_PATH}/docker-logs > /dev/null 2>&1 &)
+
 generate-test-file: ${DATA_DIR}
 	dd if=/dev/urandom bs=16M count=16 > ${FILE}
 
