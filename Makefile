@@ -84,27 +84,30 @@ dummy		    := $(shell touch artifacts)
 include ./artifacts
 
 SSHOPTS=-o "StrictHostKeyChecking no" -i ${SSHKEY} ${CLOUD_SSHOPTS}
-SCW_SERVER_CONF={"name": "${APP}", "tags": ["${GIT_BRANCH}","${APP_VERSION}"],\
-"image": "${SCW_IMAGE_ID}", "commercial_type": "${SCW_FLAVOR}", "organization": "${SCW_ORGANIZATION_ID}"}
 
 export APP_VERSION :=  $(shell git describe --tags)
+CLOUD_GROUP=$(shell echo ${APP_GROUP} | tr '[:upper:]' '[:lower:]')
+CLOUD_APP=$(shell echo ${APP} | tr '[:upper:]' '[:lower:]')
 CLOUD_SSHKEY_FILE=${CLOUD_DIR}/${CLOUD}.sshkey
 CLOUD_SERVER_ID_FILE=${CLOUD_DIR}/${CLOUD}.id
 CLOUD_HOST_FILE=${CLOUD_DIR}/${CLOUD}.host
 CLOUD_FIRST_USER_FILE=${CLOUD_DIR}/${CLOUD}.user.first
 CLOUD_USER_FILE=${CLOUD_DIR}/${CLOUD}.user
 CLOUD_UP_FILE=${CLOUD_DIR}/${CLOUD}.up
-CLOUD_HOSTNAME=${APP_GROUP}-${APP}
+CLOUD_HOSTNAME=${CLOUD_GROUP}-${CLOUD_APP}
 CLOUD_TAGGED_IDS_FILE=${CLOUD_DIR}/${CLOUD}.tag.ids
 CLOUD_TAGGED_HOSTS_FILE=${CLOUD_DIR}/${CLOUD}.tag.hosts
 CLOUD_TAGGED_IDS_INVALID_FILE=${CLOUD_DIR}/${CLOUD}.tag.ids.ko
 CLOUD_TAGGED_HOSTS_INVALID_FILE=${CLOUD_DIR}/${CLOUD}.tag.hosts.ko
+CLOUD_TAG=${APP_VERSION}
+SCW_SERVER_CONF={"name": "${CLOUD_HOSTNAME}", "tags": ["${GIT_BRANCH}","${CLOUD_TAG}"],\
+"image": "${SCW_IMAGE_ID}", "commercial_type": "${SCW_FLAVOR}", "organization": "${SCW_ORGANIZATION_ID}"}
 
-NGINX_UPSTREAM_FILE=${NGINX_DIR}/${GIT_BRANCH}.${APP}-upstream.conf
-NGINX_UPSTREAM_BACKUP=${NGINX_DIR}/${GIT_BRANCH}.${APP}-upstream.bak
-NGINX_UPSTREAM_REMOTE_FILE=${NGINX_UPSTREAM_REMOTE_PATH}/${GIT_BRANCH}.${APP}-upstream.conf
-NGINX_UPSTREAM_REMOTE_BACKUP=${NGINX_UPSTREAM_REMOTE_PATH}/${GIT_BRANCH}.${APP}-upstream.bak
-NGINX_UPSTREAM_APPLIED_FILE=${NGINX_DIR}/${GIT_BRANCH}.${APP}-upstream.ok
+NGINX_UPSTREAM_FILE=${NGINX_DIR}/${GIT_BRANCH}.${CLOUD_HOSTNAME}-upstream.conf
+NGINX_UPSTREAM_BACKUP=${NGINX_DIR}/${GIT_BRANCH}.${CLOUD_HOSTNAME}-upstream.bak
+NGINX_UPSTREAM_REMOTE_FILE=${NGINX_UPSTREAM_REMOTE_PATH}/${GIT_BRANCH}.${CLOUD_HOSTNAME}-upstream.conf
+NGINX_UPSTREAM_REMOTE_BACKUP=${NGINX_UPSTREAM_REMOTE_PATH}/${GIT_BRANCH}.${CLOUD_HOSTNAME}-upstream.bak
+NGINX_UPSTREAM_APPLIED_FILE=${NGINX_DIR}/${GIT_BRANCH}.${CLOUD_HOSTNAME}-upstream.ok
 
 ${DATA_DIR}:
 	@if [ ! -d "${DATA_DIR}" ]; then mkdir -p ${DATA_DIR};fi
@@ -333,7 +336,7 @@ nginx-conf-create: ${CLOUD}-instance-get-tagged-hosts nginx-dir
 	@if [ ! -f "${NGINX_UPSTREAM_FILE}" ];then\
 		if [ ! -z "$$(cat ${CLOUD_TAGGED_HOSTS_FILE})" ]; then\
 			cat ${CLOUD_TAGGED_HOSTS_FILE} \
-				| awk 'BEGIN{print "upstream ${APP}-${GIT_BRANCH} {"}{print "      server " $$1 ":${PORT};"}END{print "}"}'\
+				| awk 'BEGIN{print "upstream ${CLOUD_HOSTNAME}-${GIT_BRANCH} {"}{print "      server " $$1 ":${PORT};"}END{print "}"}'\
 				> ${NGINX_UPSTREAM_FILE};\
 		fi;\
 	fi;
@@ -449,28 +452,28 @@ SCW-instance-delete-invalid: SCW-instance-get-tagged-ids-invalid
 SCW-instance-get-tagged-ids: ${CLOUD_DIR}
 	@if [ ! -f "${CLOUD_TAGGED_IDS_FILE}" ];then\
 		curl -s ${SCW_API}/servers -H "X-Auth-Token: ${SCW_SECRET_TOKEN}" -H "Content-Type: application/json"  \
-			| jq -cr '.servers[] | select(.name=="${APP}" and (.tags[0] | contains("${GIT_BRANCH}")) and (.tags[1] | contains("${APP_VERSION}"))) | .id'\
+			| jq -cr '.servers[] | select(.name=="${CLOUD_HOSTNAME}" and (.tags[0] | contains("${GIT_BRANCH}")) and (.tags[1] | contains("${CLOUD_TAG}"))) | .id'\
 			> ${CLOUD_TAGGED_IDS_FILE};\
 	fi
 
 SCW-instance-get-tagged-ids-invalid: ${CLOUD_DIR}
 	@if [ ! -f "${CLOUD_TAGGED_IDS_INVALID_FILE}" ];then\
 		curl -s ${SCW_API}/servers -H "X-Auth-Token: ${SCW_SECRET_TOKEN}" -H "Content-Type: application/json"  \
-			| jq -cr '.servers[] | select(.name=="${APP}" and (.tags[0] | contains("${GIT_BRANCH}")) and (.tags[1] | contains("${APP_VERSION}") | not)) | .id'\
+			| jq -cr '.servers[] | select(.name=="${CLOUD_HOSTNAME}" and (.tags[0] | contains("${GIT_BRANCH}")) and (.tags[1] | contains("${CLOUD_TAG}") | not)) | .id'\
 			> ${CLOUD_TAGGED_IDS_INVALID_FILE};\
 	fi
 
 SCW-instance-get-tagged-hosts: SCW-instance-get-tagged-ids
 	@if [ ! -f "${CLOUD_TAGGED_HOSTS_FILE}" ];then\
 		curl -s ${SCW_API}/servers -H "X-Auth-Token: ${SCW_SECRET_TOKEN}" -H "Content-Type: application/json"  \
-			| jq -cr '.servers[] | select(.name=="${APP}" and (.tags[0] | contains("${GIT_BRANCH}")) and (.tags[1] | contains("${APP_VERSION}"))) | .${SCW_IP}'\
+			| jq -cr '.servers[] | select(.name=="${CLOUD_HOSTNAME}" and (.tags[0] | contains("${GIT_BRANCH}")) and (.tags[1] | contains("${CLOUD_TAG}"))) | .${SCW_IP}'\
 			> ${CLOUD_TAGGED_HOSTS_FILE};\
 	fi
 
 SCW-instance-get-tagged-hosts-invalid: SCW-instance-get-tagged-ids-invalid
 	@if [ ! -f "${CLOUD_TAGGED_HOSTS_INVALID_FILE}" ];then\
 		curl -s ${SCW_API}/servers -H "X-Auth-Token: ${SCW_SECRET_TOKEN}" -H "Content-Type: application/json"  \
-			| jq -cr '.servers[] | select(.name=="${APP}" and (.tags[0] | contains("${GIT_BRANCH}")) and (.tags[1] | contains("${APP_VERSION}") | not)) | .${SCW_IP}'\
+			| jq -cr '.servers[] | select(.name=="${CLOUD_HOSTNAME}" and (.tags[0] | contains("${GIT_BRANCH}")) and (.tags[1] | contains("${CLOUD_TAG}") | not)) | .${SCW_IP}'\
 			> ${CLOUD_TAGGED_HOSTS_INVALID_FILE};\
 	fi
 
@@ -725,7 +728,7 @@ ${CONFIG_APP_FILE}: ${CONFIG_REMOTE_FILE}
 		if [ ! -f "${CONFIG_APP_FILE}" ];then\
 			H=$$(cat ${CLOUD_HOST_FILE});\
 			U=$$(cat ${CLOUD_USER_FILE});\
-			if [ "${APP}" != "${TOOLS}" ];then\
+			if [ "${APP}" != "${CLOUD_CLI}" ];then\
 				ssh ${SSHOPTS} $$U@$$H git clone --branch ${GIT_BRANCH} ${GIT_ROOT}/${APP} ${APP_GROUP}/${APP};\
 				ssh ${SSHOPTS} $$U@$$H make -C ${APP_GROUP}/${APP} config;\
 			fi;\
@@ -737,7 +740,12 @@ remote-actions: remote-deploy
 		H=$$(cat ${CLOUD_HOST_FILE});\
 		U=$$(cat ${CLOUD_USER_FILE});\
 		if [ "${ACTIONS}" != "" ];then\
-			ssh ${SSHOPTS} $$U@$$H make -C ${APP_GROUP}/${APP} ${ACTIONS} aws_access_key_id=${aws_access_key_id} aws_secret_access_key=${aws_secret_access_key} ${MAKEOVERRIDES};\
+			if [ "${APP}" != "${CLOUD_CLI}" ];then\
+				MAKE_APP_PATH=${APP_GROUP}/${APP};\
+			else\
+				MAKE_APP_PATH=${APP_GROUP}/${TOOLS};\
+			fi;\
+			ssh ${SSHOPTS} $$U@$$H make -C $$MAKE_APP_PATH ${ACTIONS} aws_access_key_id=${aws_access_key_id} aws_secret_access_key=${aws_secret_access_key} ${MAKEOVERRIDES};\
 		fi
 
 remote-test-api-in-vpc: ${CLOUD}-instance-get-tagged-hosts
@@ -843,4 +851,4 @@ ${GIT_BACKEND}:
 
 # tests for automation
 remote-config-test:
-	@/usr/bin/time -f %e make remote-actions ACTIONS="generate-test-file s3-push" remote-clean
+	@/usr/bin/time -f %e make remote-actions ACTIONS="generate-test-file s3-push" remote-clean ${MAKEOVERRIDES}
