@@ -523,11 +523,18 @@ OS-instance-delete:
 	@nova delete $$(cat ${CLOUD_SERVER_ID_FILE})
 
 # swift section
-${CONFIG_SWIFT_FILE}: ${CONFIG_DIR} docker-pull
+${CONFIG_SWIFT_FILE}: ${CONFIG_DIR} docker-check
 
-${SWIFT_CATALOG}: ${CONFIG_AWS_FILE} ${DATA_DIR}
-	@echo getting ${S3_BUCKET} catalog from s3 API
-	@${AWS} s3 ls ${S3_BUCKET} | awk '{print $$NF}' | egrep '${FILES_TO_SYNC}' | sort > ${S3_CATALOG}
+${SWIFT_CATALOG}: ${CONFIG_SWIFT_FILE} ${DATA_DIR}
+	@echo getting ${SWIFT_BUCKET} catalog from ${CLOUD_CLI} API
+	@unset OS_REGION_NAME;\
+	${SWIFT} --os-auth-url ${OS_AUTH_URL} --auth-version ${OS_IDENTITY_API_VERSION}\
+			  --os-tenant-name ${OS_TENANT_NAME}\
+			  --os-storage-url ${OS_SWIFT_URL}${OS_SWIFT_ID}\
+			  --os-username ${OS_USERNAME}\
+			  --os-password ${OS_PASSWORD}\
+			  list ${SWIFT_CONTAINER}\
+	| egrep '${FILES_TO_SYNC}' | sort > ${SWIFT_CATALOG}
 
 swift-get-catalog: ${SWIFT_CATALOG}
 
@@ -540,7 +547,7 @@ swift-pull:
 
 #EC2 section
 
-${CONFIG_AWS_FILE}: ${CONFIG_DIR} docker-pull
+${CONFIG_AWS_FILE}: ${CONFIG_DIR} docker-check
 	@if [ ! -d "${HOME}/.aws" ];then\
 		echo create aws configuration;\
 		mkdir -p ${HOME}/.aws;\
