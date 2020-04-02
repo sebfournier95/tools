@@ -522,8 +522,21 @@ OS-instance-get-host: OS-instance-wait-running
 OS-instance-delete:
 	@nova delete $$(cat ${CLOUD_SERVER_ID_FILE})
 
-
+# swift section
 ${CONFIG_SWIFT_FILE}: ${CONFIG_DIR} docker-pull
+
+${SWIFT_CATALOG}: ${CONFIG_AWS_FILE} ${DATA_DIR}
+	@echo getting ${S3_BUCKET} catalog from s3 API
+	@${AWS} s3 ls ${S3_BUCKET} | awk '{print $$NF}' | egrep '${FILES_TO_SYNC}' | sort > ${S3_CATALOG}
+
+swift-get-catalog: ${SWIFT_CATALOG}
+
+swift-push:
+	${SWIFT} s3 cp ${FILE} s3://${S3_BUCKET}/$$(basename ${FILE})
+
+swift-pull:
+	${SWIFT} s3 cp s3://${S3_BUCKET}/$$(basename ${FILE}) ${FILE}
+
 
 #EC2 section
 
