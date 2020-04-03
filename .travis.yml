@@ -37,13 +37,13 @@ before_script:
 
 script:
   - git fetch && git describe --tags
-  - make docker-build CLOUD_CLI=aws
-  - make docker-build CLOUD_CLI=swift
-
-after_success:
-  - if [[ "$TRAVIS_BRANCH" == "master" ]]; then
-      make docker-push GIT_BRANCH="$TRAVIS_BRANCH" CLOUD_CLI=aws;
+  - make docker-check CLOUD_CLI=swift || make docker-build CLOUD_CLI=swift &&
+    if [[ "$TRAVIS_BRANCH" == "master" ]]; then
       make docker-push GIT_BRANCH="$TRAVIS_BRANCH" CLOUD_CLI=swift;
+    fi
+  - make docker-check CLOUD_CLI=aws || make docker-build CLOUD_CLI=aws &&
+    if [[ "$TRAVIS_BRANCH" == "master" ]]; then
+      make docker-push GIT_BRANCH="$TRAVIS_BRANCH" CLOUD_CLI=aws;
       make remote-config-test GIT_BRANCH="$TRAVIS_BRANCH" remote_http_proxy=$REMOTE_HTTP_PROXY remote_https_proxy=$REMOTE_HTTP_PROXY;
     fi
 

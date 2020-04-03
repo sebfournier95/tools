@@ -87,7 +87,7 @@ SSHOPTS=-o "StrictHostKeyChecking no" -i ${SSHKEY} ${CLOUD_SSHOPTS}
 
 tag                 := $(shell git describe --tags | sed 's/-.*//')
 VERSION 		:= $(shell cat tagfiles.${CLOUD_CLI}.version | xargs -I '{}' find {} -type f -not -name '*.tar.gz'  | sort | xargs cat | sha1sum - | sed 's/\(......\).*/\1/')
-APP_VERSION =  ${tag}-${VERSION}
+export APP_VERSION =  ${tag}-${VERSION}
 
 CLOUD_GROUP=$(shell echo ${APP_GROUP} | tr '[:upper:]' '[:lower:]')
 CLOUD_APP=$(shell echo ${APP} | tr '[:upper:]' '[:lower:]')
