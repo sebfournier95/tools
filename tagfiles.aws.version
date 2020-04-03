@@ -1,3 +1,4 @@
+aws
 docker-compose.yml
 Dockerfile.aws
-aws
+tagfiles.aws.version
