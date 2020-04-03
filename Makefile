@@ -85,7 +85,10 @@ include ./artifacts
 
 SSHOPTS=-o "StrictHostKeyChecking no" -i ${SSHKEY} ${CLOUD_SSHOPTS}
 
-export APP_VERSION :=  $(shell git describe --tags)
+tag                 := $(shell git describe --tags | sed 's/-.*//')
+VERSION 		:= $(shell cat tagfiles.${CLOUD_CLI}.version | xargs -I '{}' find {} -type f -not -name '*.tar.gz'  | sort | xargs cat | sha1sum - | sed 's/\(......\).*/\1/')
+APP_VERSION =  ${tag}-${VERSION}
+
 CLOUD_GROUP=$(shell echo ${APP_GROUP} | tr '[:upper:]' '[:lower:]')
 CLOUD_APP=$(shell echo ${APP} | tr '[:upper:]' '[:lower:]')
 CLOUD_SSHKEY_FILE=${CLOUD_DIR}/${CLOUD}.sshkey
@@ -108,6 +111,9 @@ NGINX_UPSTREAM_BACKUP=${NGINX_DIR}/${GIT_BRANCH}.${CLOUD_HOSTNAME}-upstream.bak
 NGINX_UPSTREAM_REMOTE_FILE=${NGINX_UPSTREAM_REMOTE_PATH}/${GIT_BRANCH}.${CLOUD_HOSTNAME}-upstream.conf
 NGINX_UPSTREAM_REMOTE_BACKUP=${NGINX_UPSTREAM_REMOTE_PATH}/${GIT_BRANCH}.${CLOUD_HOSTNAME}-upstream.bak
 NGINX_UPSTREAM_APPLIED_FILE=${NGINX_DIR}/${GIT_BRANCH}.${CLOUD_HOSTNAME}-upstream.ok
+
+version:
+	@echo ${APP_GROUP} ${APP} ${APP_VERSION}
 
 ${DATA_DIR}:
 	@if [ ! -d "${DATA_DIR}" ]; then mkdir -p ${DATA_DIR};fi
