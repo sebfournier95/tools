@@ -782,7 +782,7 @@ ${CONFIG_REMOTE_FILE}: cloud-instance-up remote-config-proxy ${CONFIG_DIR}
 			fi;\
 			ssh ${SSHOPTS} $$U@$$H mkdir -p ${APP_GROUP};\
 			ssh ${SSHOPTS} $$U@$$H sudo apt-get install -yq make;\
-			ssh ${SSHOPTS} $$U@$$H git clone ${GIT_ROOT}/${TOOLS} ${APP_GROUP}/${TOOLS};\
+			ssh ${SSHOPTS} $$U@$$H git clone -q ${GIT_ROOT}/${TOOLS} ${APP_GROUP}/${TOOLS};\
 			ssh ${SSHOPTS} $$U@$$H make -C ${APP_GROUP}/${TOOLS} config-init http_proxy=${remote_http_proxy} https_proxy=${remote_https_proxy};\
 			ssh ${SSHOPTS} $$U@$$H make -C ${APP_GROUP}/${TOOLS} config-next aws_access_key_id=${aws_access_key_id} aws_secret_access_key=${aws_secret_access_key};\
 			touch ${CONFIG_REMOTE_FILE};\
@@ -802,7 +802,7 @@ ${CONFIG_APP_FILE}: ${CONFIG_REMOTE_FILE}
 			H=$$(cat ${CLOUD_HOST_FILE});\
 			U=$$(cat ${CLOUD_USER_FILE});\
 			if [ "${APP}" != "${CLOUD_CLI}" ];then\
-				ssh ${SSHOPTS} $$U@$$H git clone --branch ${GIT_BRANCH} ${GIT_ROOT}/${APP} ${APP_GROUP}/${APP};\
+				ssh ${SSHOPTS} $$U@$$H git clone -q --branch ${GIT_BRANCH} ${GIT_ROOT}/${APP} ${APP_GROUP}/${APP};\
 				ssh ${SSHOPTS} $$U@$$H make -C ${APP_GROUP}/${APP} config;\
 			fi;\
 			touch ${CONFIG_APP_FILE};\
@@ -908,7 +908,7 @@ remote-install-monitor-nq:
 #GIT matchid projects section
 ${GIT_BACKEND}:
 	@echo configuring matchID
-	@${GIT} clone ${GIT_ROOT}/${GIT_BACKEND}
+	@${GIT} clone -q ${GIT_ROOT}/${GIT_BACKEND}
 	@cp artifacts ${GIT_BACKEND}/artifacts
 	@cp docker-compose-local.yml ${GIT_BACKEND}/docker-compose-local.yml
 	@echo "export ES_NODES=1" >> ${GIT_BACKEND}/artifacts
