@@ -42,7 +42,7 @@ RCLONE=/usr/bin/rclone
 DATAGOUV_API = https://www.data.gouv.fr/api/1/datasets
 DATAGOUV_DATASET=service-public-fr-annuaire-de-l-administration-base-de-donnees-locales
 DATAGOUV_CATALOG = ${DATA_DIR}/${DATAGOUV_DATASET}.datagouv.list
-DATAGOUV_FILES_TO_SYNC=(^|\s)test.bin($$|\s)
+DATAGOUV_FILES_TO_SYNC=test.bin
 
 DATA_DIR = ${PWD}/data
 export FILE=${DATA_DIR}/test.bin
@@ -566,7 +566,7 @@ config-rclone: ${CONFIG_RCLONE_FILE}
 
 ${RCLONE_CATALOG}: ${CONFIG_RCLONE_FILE} ${DATA_DIR}
 	@echo getting ${RCLONE_BUCKET} catalog from ${RCLONE_PROVIDER} API
-	@${RCLONE} -q ls ${RCLONE_PROVIDER}:${RCLONE_BUCKET} | awk '{print $$NF}' | egrep '${FILES_TO_SYNC}' | sort > ${RCLONE_CATALOG}
+	@${RCLONE} -q ls ${RCLONE_PROVIDER}:${RCLONE_BUCKET} | awk '{print $$NF}' | egrep '^${FILES_TO_SYNC}$$' | sort > ${RCLONE_CATALOG}
 
 rclone-get-catalog: ${RCLONE_CATALOG}
 
@@ -590,7 +590,7 @@ ${SWIFT_CATALOG}: ${CONFIG_SWIFT_FILE} ${DATA_DIR}
 			  --os-username ${OS_USERNAME}\
 			  --os-password ${OS_PASSWORD}\
 			  list ${SWIFT_CONTAINER}\
-	| egrep '${FILES_TO_SYNC}' | sort > ${SWIFT_CATALOG}
+	| egrep '^${FILES_TO_SYNC}$$' | sort > ${SWIFT_CATALOG}
 
 swift-get-catalog: ${SWIFT_CATALOG}
 
@@ -676,7 +676,7 @@ EC2-instance-delete:
 #S3 section
 ${S3_CATALOG}: ${CONFIG_AWS_FILE} ${DATA_DIR}
 	@echo getting ${S3_BUCKET} catalog from s3 API
-	@${AWS} s3 ls ${S3_BUCKET} | awk '{print $$NF}' | egrep '${FILES_TO_SYNC}' | sort > ${S3_CATALOG}
+	@${AWS} s3 ls ${S3_BUCKET} | awk '{print $$NF}' | egrep '^${FILES_TO_SYNC}$$' | sort > ${S3_CATALOG}
 
 s3-get-catalog: ${S3_CATALOG}
 
@@ -888,7 +888,7 @@ remote-install-monitor-nq:
 	fi
 
 datagouv-to-s3: s3-get-catalog datagouv-get-files
-	@for file in $$(ls ${DATA_DIR} | egrep '${FILES_TO_SYNC}' | grep -v tmp.list);do\
+	@for file in $$(ls ${DATA_DIR} | egrep '^${FILES_TO_SYNC}$$' | grep -v tmp.list);do\
 		${AWS} s3 cp ${DATA_DIR}/$$file s3://${S3_BUCKET}/$$file;\
 		${AWS} s3api put-object-acl --acl public-read --bucket ${S3_BUCKET} --key $$file && echo $$file acl set to public;\
 	done
@@ -897,7 +897,7 @@ datagouv-to-aws: datagouv-to-s3
 	# retrocompat
 
 datagouv-to-rclone: rclone-get-catalog datagouv-get-files
-	@for file in $$(ls ${DATA_DIR} | egrep '${FILES_TO_SYNC}' | grep -v tmp.list);do\
+	@for file in $$(ls ${DATA_DIR} | egrep '^${FILES_TO_SYNC}$$' | grep -v tmp.list);do\
 		echo copy ${DATA_DIR}/$$file to ${RCLONE_PROVIDER}:${RCLONE_BUCKET};\
 		(${RCLONE} -q copy ${DATA_DIR}/$$file ${RCLONE_PROVIDER}:${RCLONE_BUCKET} || (echo failed && exit 1));\
 	done
