@@ -687,7 +687,7 @@ get-catalog: ${CATALOG}
 ${CATALOG_TAG}: ${CATALOG}
 
 catalog-tag: ${CATALOG_TAG}
-	@cat ${CATALOG} | sort | sed 's/\s*$$//'| sha1sum | awk '{print $1}' | cut -c-8 > ${CATALOG_TAG}
+	@cat ${CATALOG} | sort | sed 's/\s*$$//'| sha1sum | awk '{print $$1}' | cut -c-8 > ${CATALOG_TAG}
 
 storage-push: ${STORAGE_CLI}-push
 
