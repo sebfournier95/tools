@@ -17,6 +17,7 @@ APP_GROUP_DOMAIN=matchid.io
 TOOLS = tools
 TOOLS_PATH := $(shell pwd)
 export CLOUD_CLI=aws
+export STORAGE_CLI=rclone
 APP_GROUP_PATH := $(shell dirname ${TOOLS_PATH})
 export APP = ${CLOUD_CLI}
 export APP_PATH = ${TOOLS_PATH}
@@ -36,7 +37,10 @@ export DC := /usr/local/bin/docker-compose
 
 AWS=${TOOLS_PATH}/aws
 SWIFT=${TOOLS_PATH}/swift
+RCLONE=/usr/bin/rclone
 
+DATAGOUV_API = https://www.data.gouv.fr/api/1/datasets
+DATAGOUV_DATASET=service-public-fr-annuaire-de-l-administration-base-de-donnees-locales
 DATAGOUV_CATALOG = ${DATA_DIR}/${DATAGOUV_DATASET}.datagouv.list
 DATAGOUV_FILES_TO_SYNC=(^|\s)test.bin($$|\s)
 
@@ -53,6 +57,10 @@ S3_CONFIG = ${TOOLS_PATH}/.aws/config
 
 SWIFT_CONTAINER = $(shell echo ${APP_GROUP} | tr '[:upper:]' '[:lower:]')
 SWIFT_CATALOG = ${DATA_DIR}/${DATAGOUV_DATASET}.swift.list
+
+RCLONE_BUCKET = $(shell echo ${APP_GROUP} | tr '[:upper:]' '[:lower:]')
+RCLONE_CATALOG = ${DATA_DIR}/${DATAGOUV_DATASET}.rclone.list
+RCLONE_PROVIDER = s3
 
 SSHID=${APP_GROUP_MAIL}
 SSHKEY_PRIVATE = ${HOME}/.ssh/id_rsa_${APP_GROUP}
@@ -78,7 +86,8 @@ CONFIG_TOOLS_FILE=${CONFIG_DIR}/${TOOLS}.deployed
 CONFIG_APP_FILE=${CONFIG_DIR}/${APP}.deployed
 CONFIG_DOCKER_FILE=${CONFIG_DIR}/docker
 CONFIG_AWS_FILE=${CONFIG_DIR}/aws
-CONFIG_SWIFT_FILE=${CONFIG_DIR}/SWIFT
+CONFIG_SWIFT_FILE=${CONFIG_DIR}/swift
+CONFIG_RCLONE_FILE=${CONFIG_DIR}/rclone
 
 dummy		    := $(shell touch artifacts)
 include ./artifacts
@@ -534,8 +543,43 @@ OS-instance-get-host: OS-instance-wait-running
 OS-instance-delete:
 	@nova delete $$(cat ${CLOUD_SERVER_ID_FILE})
 
+# rclone section
+${CONFIG_RCLONE_FILE}: ${CONFIG_DIR}
+	@if [ ! -f "${RCLONE}" ]; then\
+		curl -s -O https://downloads.rclone.org/rclone-current-linux-amd64.zip;\
+		unzip rclone-current-linux-amd64.zip;\
+		sudo cp rclone-*-linux-amd64/rclone ${RCLONE}; \
+		sudo chmod 755 ${RCLONE}; \
+		sudo chmod +x ${RCLONE}; \
+		sudo mkdir -p /usr/share/man/man1;\
+		sudo cp rclone-*-linux-amd64/rclone.1 /usr/share/man/man1/;\
+		sudo apt install mandoc;\
+		sudo makewhatis /usr/share/man;\
+		rm -rf rclone-*-linux-amd64*;\
+		touch ${CONFIG_RCLONE_FILE};\
+	else\
+		touch ${CONFIG_RCLONE_FILE};\
+	fi
+
+
+config-rclone: ${CONFIG_RCLONE_FILE}
+
+${RCLONE_CATALOG}: ${CONFIG_RCLONE_FILE} ${DATA_DIR}
+	@echo getting ${RCLONE_BUCKET} catalog from ${RCLONE_PROVIDER} API
+	@${RCLONE} ls ${RCLONE_PROVIDER}:${RCLONE_BUCKET} | awk '{print $$NF}' | egrep '${FILES_TO_SYNC}' | sort > ${RCLONE_CATALOG}
+
+rclone-get-catalog: ${RCLONE_CATALOG}
+
+rclone-push:
+	@${RCLONE} -q copy ${FILE} ${RCLONE_PROVIDER}:${RCLONE_BUCKET}
+
+rclone-pull:
+	@${RCLONE} -q copy ${RCLONE_PROVIDER}:${RCLONE_BUCKET}/$$(basename ${FILE}) $$(dirname ${FILE})
+
 # swift section
 ${CONFIG_SWIFT_FILE}: ${CONFIG_DIR} docker-check
+
+config-swift: ${CONFIG_SWIFT_FILE}
 
 ${SWIFT_CATALOG}: ${CONFIG_SWIFT_FILE} ${DATA_DIR}
 	@echo getting ${SWIFT_BUCKET} catalog from ${CLOUD_CLI} API
@@ -571,9 +615,7 @@ ${CONFIG_AWS_FILE}: ${CONFIG_DIR} docker-check
 
 config-aws: ${CONFIG_AWS_FILE}
 
-config-swift: ${CONFIG_SWIFT_FILE}
-
-EC2-add-sshkey:
+EC2-add-sshkey: config-aws
 	@if [ ! -f "${CLOUD_SSHKEY_FILE}" ];then\
 		(\
 			(\
@@ -592,7 +634,7 @@ EC2-add-sshkey:
 		);\
 	fi
 
-EC2-instance-order: ${CLOUD_DIR} EC2-add-sshkey
+EC2-instance-order: ${CLOUD_DIR} config-aws EC2-add-sshkey
 	@if [ ! -f "${CLOUD_SERVER_ID_FILE}" ];then\
 		(\
 			(\
@@ -653,8 +695,15 @@ ${DATAGOUV_CATALOG}: config ${DATA_DIR}
 datagouv-get-catalog: ${DATAGOUV_CATALOG}
 
 datagouv-get-files: ${DATAGOUV_CATALOG}
-	@if [ -f "${S3_CATALOG}" ]; then\
-		(echo egrep -v $$(cat ${S3_CATALOG} | tr '\n' '|' | sed 's/.gz//g;s/^/"(/;s/|$$/)"/') ${DATAGOUV_CATALOG} | sh > ${DATA_DIR}/tmp.list) || true;\
+	@if [ "${STORAGE_CLI}" == "aws" ];then\
+		CATALOG=${S3_CATALOG};\
+	elif [ "${STORAGE_CLI}" == "swift" ];then\
+		CATALOG=${SWIFT_CATALOG};\
+	elif [ "${STORAGE_CLI}" == "rclone" ];then\
+		CATALOG=${RCLONE_CATALOG};\
+	fi;\
+	if [ -f "$$CATALOG" ]; then\
+		(echo egrep -v $$(cat $$CATALOG | tr '\n' '|' | sed 's/.gz//g;s/^/"(/;s/|$$/)"/') ${DATAGOUV_CATALOG} | sh > ${DATA_DIR}/tmp.list) || true;\
 	else\
 		cp ${DATAGOUV_CATALOG} ${DATA_DIR}/tmp.list;\
 	fi
@@ -676,7 +725,7 @@ datagouv-get-files: ${DATAGOUV_CATALOG}
 		if [ "$$i" == "0" ]; then\
 			echo no new file downloaded from datagouv;\
 		else\
-			echo "$$i file(s) donwloaded from datagouv";\
+			echo "$$i file(s) downloaded from datagouv";\
 		fi;\
 	else\
 		echo no new file downloaded from datagouv;\
@@ -838,12 +887,22 @@ remote-install-monitor-nq:
 		ssh ${SSHOPTS} $$U@$$H "sudo bash ${APP_GROUP}/${TOOLS}/nq-install.sh ${NQ_TOKEN}";\
 	fi
 
-
 datagouv-to-s3: s3-get-catalog datagouv-get-files
-	@for file in $$(ls ${DATA_DIR} | egrep '${FILES_TO_SYNC}');do\
+	@for file in $$(ls ${DATA_DIR} | egrep '${FILES_TO_SYNC}' | grep -v tmp.list);do\
 		${AWS} s3 cp ${DATA_DIR}/$$file s3://${S3_BUCKET}/$$file;\
 		${AWS} s3api put-object-acl --acl public-read --bucket ${S3_BUCKET} --key $$file && echo $$file acl set to public;\
 	done
+
+datagouv-to-aws: datagouv-to-s3
+	# retrocompat
+
+datagouv-to-rclone: rclone-get-catalog datagouv-get-files
+	@for file in $$(ls ${DATA_DIR} | egrep '${FILES_TO_SYNC}' | grep -v tmp.list);do\
+		echo copy ${DATA_DIR}/$$file to ${RCLONE_PROVIDER}:${RCLONE_BUCKET};\
+		(${RCLONE} -q copy ${DATA_DIR}/$$file ${RCLONE_PROVIDER}:${RCLONE_BUCKET} || (echo failed && exit 1));\
+	done
+
+datagouv-to-storage: datagouv-to-${STORAGE_CLI}
 
 #GIT matchid projects section
 ${GIT_BACKEND}:
