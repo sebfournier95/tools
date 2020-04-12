@@ -566,7 +566,7 @@ config-rclone: ${CONFIG_RCLONE_FILE}
 
 ${RCLONE_CATALOG}: ${CONFIG_RCLONE_FILE} ${DATA_DIR}
 	@echo getting ${RCLONE_BUCKET} catalog from ${RCLONE_PROVIDER} API
-	@${RCLONE} ls ${RCLONE_PROVIDER}:${RCLONE_BUCKET} | awk '{print $$NF}' | egrep '${FILES_TO_SYNC}' | sort > ${RCLONE_CATALOG}
+	@${RCLONE} -q ls ${RCLONE_PROVIDER}:${RCLONE_BUCKET} | awk '{print $$NF}' | egrep '${FILES_TO_SYNC}' | sort > ${RCLONE_CATALOG}
 
 rclone-get-catalog: ${RCLONE_CATALOG}
 
