@@ -128,7 +128,7 @@ ${CONFIG_DIR}:
 ${CONFIG_INIT_FILE}: ${CONFIG_DIR} config-proxy tools-install docker-install
 	@touch ${CONFIG_INIT_FILE}
 
-${CONFIG_NEXT_FILE}: ${CONFIG_DIR} config-${CLOUD_CLI}
+${CONFIG_NEXT_FILE}: ${CONFIG_DIR} config-${STORAGE_CLI}
 	@touch ${CONFIG_NEXT_FILE}
 
 config-init: ${CONFIG_INIT_FILE}
