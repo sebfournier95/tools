@@ -172,6 +172,9 @@ endif
 ifeq ("$(wildcard /usr/bin/jq)","")
 	sudo apt-get install -yqq jq; true
 endif
+ifeq ("$(wildcard /usr/bin/unzip)","")
+	sudo apt-get install -yqq unzip; true
+endif
 
 #docker section
 docker-install: ${CONFIG_DOCKER_FILE} docker-config-proxy
