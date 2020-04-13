@@ -172,9 +172,6 @@ endif
 ifeq ("$(wildcard /usr/bin/jq)","")
 	sudo apt-get install -yqq jq; true
 endif
-ifeq ("$(wildcard /usr/bin/unzip)","")
-	sudo apt-get install -yqq unzip; true
-endif
 
 #docker section
 docker-install: ${CONFIG_DOCKER_FILE} docker-config-proxy
@@ -544,16 +541,9 @@ OS-instance-delete:
 # rclone section
 ${CONFIG_RCLONE_FILE}: ${CONFIG_DIR}
 	@if [ ! -f "${RCLONE}" ]; then\
-		curl -s -O https://downloads.rclone.org/rclone-current-linux-amd64.zip;\
-		unzip rclone-current-linux-amd64.zip;\
-		sudo cp rclone-*-linux-amd64/rclone ${RCLONE}; \
-		sudo chmod 755 ${RCLONE}; \
-		sudo chmod +x ${RCLONE}; \
-		# sudo mkdir -p /usr/share/man/man1;\
-		# sudo cp rclone-*-linux-amd64/rclone.1 /usr/share/man/man1/;\
-		# sudo apt install mandoc;\
-		# sudo makewhatis /usr/share/man;\
-		rm -rf rclone-*-linux-amd64*;\
+		curl -s -O https://downloads.rclone.org/rclone-current-linux-amd64.deb;\
+		sudo dpkg -i rclone-current-linux-amd64.deb; \
+		rm rclone-*-linux-amd64*;\
 		touch ${CONFIG_RCLONE_FILE};\
 	else\
 		touch ${CONFIG_RCLONE_FILE};\
