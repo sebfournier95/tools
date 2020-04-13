@@ -572,7 +572,7 @@ rclone-push:
 	@${RCLONE} -q copy ${FILE} ${RCLONE_PROVIDER}:${BUCKET}
 
 rclone-pull:
-	@${RCLONE} -q copy ${RCLONE_PROVIDER}:${BUCKET}/$$(basename ${FILE}) $$(dirname ${FILE})
+	@${RCLONE} -q copy ${RCLONE_PROVIDER}:${BUCKET}/${FILE} ${DATA_DIR}
 
 # swift section
 ${CONFIG_SWIFT_FILE}: ${CONFIG_DIR} docker-check
@@ -703,7 +703,7 @@ aws-push:
 	${AWS} s3 cp ${FILE} s3://${BUCKET}/$$(basename ${FILE})
 
 aws-pull:
-	${AWS} s3 cp s3://${BUCKET}/$$(basename ${FILE}) ${FILE}
+	${AWS} s3 cp s3://${BUCKET}/${FILE} ${DATA_DIR}/${FILE}
 
 datagouv-to-aws: aws-get-catalog datagouv-get-files
 	@for file in $$(ls ${DATA_DIR} | egrep '^${FILES_PATTERN}$$' | grep -v tmp.list);do\
@@ -917,4 +917,4 @@ ${GIT_BACKEND}:
 
 # tests for automation
 remote-config-test:
-	@/usr/bin/time -f %e make remote-actions ACTIONS="generate-test-file s3-push" remote-clean ${MAKEOVERRIDES}
+	@/usr/bin/time -f %e make remote-actions ACTIONS="generate-test-file storage-push" remote-clean ${MAKEOVERRIDES}
