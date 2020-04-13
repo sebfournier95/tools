@@ -549,10 +549,10 @@ ${CONFIG_RCLONE_FILE}: ${CONFIG_DIR}
 		sudo cp rclone-*-linux-amd64/rclone ${RCLONE}; \
 		sudo chmod 755 ${RCLONE}; \
 		sudo chmod +x ${RCLONE}; \
-		sudo mkdir -p /usr/share/man/man1;\
-		sudo cp rclone-*-linux-amd64/rclone.1 /usr/share/man/man1/;\
-		sudo apt install mandoc;\
-		sudo makewhatis /usr/share/man;\
+		# sudo mkdir -p /usr/share/man/man1;\
+		# sudo cp rclone-*-linux-amd64/rclone.1 /usr/share/man/man1/;\
+		# sudo apt install mandoc;\
+		# sudo makewhatis /usr/share/man;\
 		rm -rf rclone-*-linux-amd64*;\
 		touch ${CONFIG_RCLONE_FILE};\
 	else\
