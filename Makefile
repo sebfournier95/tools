@@ -52,6 +52,8 @@ include ./artifacts.OS.ovh
 include ./artifacts.SCW
 
 STORAGE_BUCKET = $(shell echo ${APP_GROUP} | tr '[:upper:]' '[:lower:]')
+#nb of chunk is limited to 1000 on SCW, so STORAGE_CHUNK_SIZE for > 500G should be larger
+STORAGE_CHUNK_SIZE=50M
 CATALOG = ${DATA_DIR}/${STORAGE_BUCKET}.${STORAGE_CLI}.list
 CATALOG_TAG = ${DATA_DIR}/${STORAGE_BUCKET}.tag
 S3_CONFIG = ${TOOLS_PATH}/.aws/config
@@ -564,7 +566,7 @@ datagouv-to-rclone: rclone-get-catalog datagouv-get-files
 	done
 
 rclone-push:
-	@${RCLONE} -q --progress copy ${FILE} ${RCLONE_PROVIDER}:${STORAGE_BUCKET}
+	@${RCLONE} -q --progress --s3-chunk-size ${STORAGE_CHUNK_SIZE} copy ${FILE} ${RCLONE_PROVIDER}:${STORAGE_BUCKET}
 
 rclone-pull:
 	@${RCLONE} -q --progress copy ${RCLONE_PROVIDER}:${STORAGE_BUCKET}/${FILE} ${DATA_DIR}
