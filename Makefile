@@ -55,9 +55,9 @@ STORAGE_BUCKET = $(shell echo ${APP_GROUP} | tr '[:upper:]' '[:lower:]')
 CATALOG = ${DATA_DIR}/${STORAGE_BUCKET}.${STORAGE_CLI}.list
 CATALOG_TAG = ${DATA_DIR}/${STORAGE_BUCKET}.tag
 S3_CONFIG = ${TOOLS_PATH}/.aws/config
-RCLONE_PROVIDER = s3
-RCLONE_CONFIG_S3_ACCESS_KEY_ID=${STORAGE_ACCESS_KEY}
-RCLONE_CONFIG_S3_SECRET_ACCESS_KEY=${STORAGE_SECRET_KEY}
+export RCLONE_PROVIDER = s3
+export RCLONE_CONFIG_S3_ACCESS_KEY_ID=${STORAGE_ACCESS_KEY}
+export RCLONE_CONFIG_S3_SECRET_ACCESS_KEY=${STORAGE_SECRET_KEY}
 
 SSHID=${APP_GROUP_MAIL}
 SSHKEY_PRIVATE = ${HOME}/.ssh/id_rsa_${APP_GROUP}
@@ -564,10 +564,10 @@ datagouv-to-rclone: rclone-get-catalog datagouv-get-files
 	done
 
 rclone-push:
-	@${RCLONE} -q copy ${FILE} ${RCLONE_PROVIDER}:${STORAGE_BUCKET}
+	@${RCLONE} -q --progress copy ${FILE} ${RCLONE_PROVIDER}:${STORAGE_BUCKET}
 
 rclone-pull:
-	@${RCLONE} -q copy ${RCLONE_PROVIDER}:${STORAGE_BUCKET}/${FILE} ${DATA_DIR}
+	@${RCLONE} -q --progress copy ${RCLONE_PROVIDER}:${STORAGE_BUCKET}/${FILE} ${DATA_DIR}
 
 # swift section
 ${CONFIG_SWIFT_FILE}: ${CONFIG_DIR} docker-check
