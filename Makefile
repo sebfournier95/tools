@@ -51,11 +51,13 @@ include ./artifacts.EC2.outscale
 include ./artifacts.OS.ovh
 include ./artifacts.SCW
 
-BUCKET = $(shell echo ${APP_GROUP} | tr '[:upper:]' '[:lower:]')
-CATALOG = ${DATA_DIR}/${BUCKET}.${STORAGE_CLI}.list
-CATALOG_TAG = ${DATA_DIR}/${BUCKET}.tag
+STORAGE_BUCKET = $(shell echo ${APP_GROUP} | tr '[:upper:]' '[:lower:]')
+CATALOG = ${DATA_DIR}/${STORAGE_BUCKET}.${STORAGE_CLI}.list
+CATALOG_TAG = ${DATA_DIR}/${STORAGE_BUCKET}.tag
 S3_CONFIG = ${TOOLS_PATH}/.aws/config
 RCLONE_PROVIDER = s3
+RCLONE_CONFIG_S3_ACCESS_KEY_ID=${STORAGE_ACCESS_KEY}
+RCLONE_CONFIG_S3_SECRET_ACCESS_KEY=${STORAGE_SECRET_KEY}
 
 SSHID=${APP_GROUP_MAIL}
 SSHKEY_PRIVATE = ${HOME}/.ssh/id_rsa_${APP_GROUP}
@@ -552,20 +554,20 @@ ${CONFIG_RCLONE_FILE}: ${CONFIG_DIR}
 config-rclone: ${CONFIG_RCLONE_FILE}
 
 rclone-get-catalog: ${CONFIG_RCLONE_FILE} ${DATA_DIR}
-	@echo getting ${BUCKET} catalog from ${RCLONE_PROVIDER} API
-	@${RCLONE} -q ls ${RCLONE_PROVIDER}:${BUCKET} | awk '{print $$NF}' | egrep '^${FILES_PATTERN}$$' | sort > ${CATALOG}
+	@echo getting ${STORAGE_BUCKET} catalog from ${RCLONE_PROVIDER} API
+	@${RCLONE} -q ls ${RCLONE_PROVIDER}:${STORAGE_BUCKET} | awk '{print $$NF}' | egrep '^${FILES_PATTERN}$$' | sort > ${CATALOG}
 
 datagouv-to-rclone: rclone-get-catalog datagouv-get-files
 	@for file in $$(ls ${DATA_DIR} | egrep '^${FILES_PATTERN}$$' | grep -v tmp.list);do\
-		echo copy ${DATA_DIR}/$$file to ${RCLONE_PROVIDER}:${BUCKET};\
-		(${RCLONE} -q copy ${DATA_DIR}/$$file ${RCLONE_PROVIDER}:${BUCKET} || (echo failed && exit 1));\
+		echo copy ${DATA_DIR}/$$file to ${RCLONE_PROVIDER}:${STORAGE_BUCKET};\
+		(${RCLONE} -q copy ${DATA_DIR}/$$file ${RCLONE_PROVIDER}:${STORAGE_BUCKET} || (echo failed && exit 1));\
 	done
 
 rclone-push:
-	@${RCLONE} -q copy ${FILE} ${RCLONE_PROVIDER}:${BUCKET}
+	@${RCLONE} -q copy ${FILE} ${RCLONE_PROVIDER}:${STORAGE_BUCKET}
 
 rclone-pull:
-	@${RCLONE} -q copy ${RCLONE_PROVIDER}:${BUCKET}/${FILE} ${DATA_DIR}
+	@${RCLONE} -q copy ${RCLONE_PROVIDER}:${STORAGE_BUCKET}/${FILE} ${DATA_DIR}
 
 # swift section
 ${CONFIG_SWIFT_FILE}: ${CONFIG_DIR} docker-check
@@ -573,14 +575,14 @@ ${CONFIG_SWIFT_FILE}: ${CONFIG_DIR} docker-check
 config-swift: ${CONFIG_SWIFT_FILE}
 
 swift-get-catalog: ${CONFIG_SWIFT_FILE} ${DATA_DIR}
-	@echo getting ${SWIFT_BUCKET} catalog from ${CLOUD_CLI} API
+	@echo getting ${SWIFT_STORAGE_BUCKET} catalog from ${CLOUD_CLI} API
 	@unset OS_REGION_NAME;\
 	${SWIFT} --os-auth-url ${OS_AUTH_URL} --auth-version ${OS_IDENTITY_API_VERSION}\
 			  --os-tenant-name ${OS_TENANT_NAME}\
 			  --os-storage-url ${OS_SWIFT_URL}${OS_SWIFT_ID}\
-			  --os-username ${OS_USERNAME}\
-			  --os-password ${OS_PASSWORD}\
-			  list ${BUCKET}\
+			  --os-username ${STORAGE_ACCESS_KEY}\
+			  --os-password ${STORAGE_SECRET_KEY}\
+			  list ${STORAGE_BUCKET}\
 	| egrep '^${FILES_PATTERN}$$' | sort > ${CATALOG}
 
 swift-push:
@@ -589,7 +591,7 @@ swift-push:
 			  --os-storage-url ${OS_SWIFT_URL}${OS_SWIFT_ID}\
 			  --os-username ${OS_USERNAME}\
 			  --os-password ${OS_PASSWORD}\
-			  copy ${FILE} -d ${BUCKET}/$$(basename ${FILE})
+			  copy ${FILE} -d ${STORAGE_BUCKET}/$$(basename ${FILE})
 
 swift-pull:
 	${SWIFT} --os-auth-url ${OS_AUTH_URL} --auth-version ${OS_IDENTITY_API_VERSION}\
@@ -597,7 +599,7 @@ swift-pull:
 			  --os-storage-url ${OS_SWIFT_URL}${OS_SWIFT_ID}\
 			  --os-username ${OS_USERNAME}\
 			  --os-password ${OS_PASSWORD}\
-			  download ${BUCKET} $$(basename ${FILE}) -o ${FILE}
+			  download ${STORAGE_BUCKET} $$(basename ${FILE}) -o ${FILE}
 
 #EC2 section
 
@@ -605,7 +607,7 @@ ${CONFIG_AWS_FILE}: ${CONFIG_DIR} docker-check
 	@if [ ! -d "${HOME}/.aws" ];then\
 		echo create aws configuration;\
 		mkdir -p ${HOME}/.aws;\
-		echo -e "[default]\naws_access_key_id=${aws_access_key_id}\naws_secret_access_key=${aws_secret_access_key}\n" \
+		echo -e "[default]\naws_access_key_id=${STORAGE_ACCESS_KEY}\naws_secret_access_key=${STORAGE_SECRET_KEY}\n" \
 		> ${HOME}/.aws/credentials;\
 		cp .aws/config ${HOME}/.aws/;\
 	fi;
@@ -689,19 +691,19 @@ storage-pull: ${STORAGE_CLI}-pull
 #aws S3 section
 
 aws-get-catalog: ${CONFIG_AWS_FILE} ${DATA_DIR}
-	@echo getting ${BUCKET} catalog from s3 API
-	@${AWS} s3 ls ${BUCKET} | awk '{print $$NF}' | egrep '^${FILES_PATTERN}$$' | sort > ${CATALOG}
+	@echo getting ${STORAGE_BUCKET} catalog from s3 API
+	@${AWS} s3 ls ${STORAGE_BUCKET} | awk '{print $$NF}' | egrep '^${FILES_PATTERN}$$' | sort > ${CATALOG}
 
 aws-push:
-	${AWS} s3 cp ${FILE} s3://${BUCKET}/$$(basename ${FILE})
+	${AWS} s3 cp ${FILE} s3://${STORAGE_BUCKET}/$$(basename ${FILE})
 
 aws-pull:
-	${AWS} s3 cp s3://${BUCKET}/${FILE} ${DATA_DIR}/${FILE}
+	${AWS} s3 cp s3://${STORAGE_BUCKET}/${FILE} ${DATA_DIR}/${FILE}
 
 datagouv-to-aws: aws-get-catalog datagouv-get-files
 	@for file in $$(ls ${DATA_DIR} | egrep '^${FILES_PATTERN}$$' | grep -v tmp.list);do\
-		${AWS} s3 cp ${DATA_DIR}/$$file s3://${BUCKET}/$$file;\
-		${AWS} s3api put-object-acl --acl public-read --bucket ${BUCKET} --key $$file && echo $$file acl set to public;\
+		${AWS} s3 cp ${DATA_DIR}/$$file s3://${STORAGE_BUCKET}/$$file;\
+		${AWS} s3api put-object-acl --acl public-read --STORAGE_BUCKET ${STORAGE_BUCKET} --key $$file && echo $$file acl set to public;\
 	done
 
 #DATAGOUV section
@@ -777,7 +779,7 @@ ${CONFIG_REMOTE_FILE}: cloud-instance-up remote-config-proxy ${CONFIG_DIR}
 			ssh ${SSHOPTS} $$U@$$H sudo apt-get install -yq make;\
 			ssh ${SSHOPTS} $$U@$$H git clone -q ${GIT_ROOT}/${TOOLS} ${APP_GROUP}/${TOOLS};\
 			ssh ${SSHOPTS} $$U@$$H make -C ${APP_GROUP}/${TOOLS} config-init http_proxy=${remote_http_proxy} https_proxy=${remote_https_proxy};\
-			ssh ${SSHOPTS} $$U@$$H make -C ${APP_GROUP}/${TOOLS} config-next aws_access_key_id=${aws_access_key_id} aws_secret_access_key=${aws_secret_access_key};\
+			ssh ${SSHOPTS} $$U@$$H make -C ${APP_GROUP}/${TOOLS} config-next STORAGE_ACCESS_KEY=${STORAGE_ACCESS_KEY} STORAGE_SECRET_KEY=${STORAGE_SECRET_KEY};\
 			touch ${CONFIG_REMOTE_FILE};\
 			touch ${CONFIG_TOOLS_FILE};\
 		fi
@@ -811,7 +813,7 @@ remote-actions: remote-deploy
 			else\
 				MAKE_APP_PATH=${APP_GROUP}/${TOOLS};\
 			fi;\
-			ssh ${SSHOPTS} $$U@$$H make -C $$MAKE_APP_PATH ${ACTIONS} aws_access_key_id=${aws_access_key_id} aws_secret_access_key=${aws_secret_access_key} ${MAKEOVERRIDES};\
+			ssh ${SSHOPTS} $$U@$$H make -C $$MAKE_APP_PATH ${ACTIONS} STORAGE_ACCESS_KEY=${STORAGE_ACCESS_KEY} STORAGE_SECRET_KEY=${STORAGE_SECRET_KEY} ${MAKEOVERRIDES};\
 		fi
 
 remote-test-api-in-vpc: ${CLOUD}-instance-get-tagged-hosts
@@ -906,7 +908,7 @@ ${GIT_BACKEND}:
 	@cp docker-compose-local.yml ${GIT_BACKEND}/docker-compose-local.yml
 	@echo "export ES_NODES=1" >> ${GIT_BACKEND}/artifacts
 	@echo "export PROJECTS=${PWD}/projects" >> ${GIT_BACKEND}/artifacts
-	@echo "export BUCKET=${BUCKET}" >> ${GIT_BACKEND}/artifacts
+	@echo "export STORAGE_BUCKET=${STORAGE_BUCKET}" >> ${GIT_BACKEND}/artifacts
 
 # tests for automation
 remote-config-test:
