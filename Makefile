@@ -720,7 +720,7 @@ datagouv-get-files: ${DATAGOUV_CATALOG}
 	@if [ -f "${CATALOG}" ]; then\
 		(echo egrep -v $$(cat ${CATALOG} | tr '\n' '|' | sed 's/.gz//g;s/^/"(/;s/|$$/)"/') ${DATAGOUV_CATALOG} | sh > ${DATA_DIR}/tmp.list) || true;\
 	else\
-		cp ${DATAGOUV_CATALOG} ${DATA_DIR}/tmp.list;\
+		cat ${DATAGOUV_CATALOG} | egrep '/${FILES_PATTERN}$$' > ${DATA_DIR}/tmp.list;\
 	fi
 
 	@if [ -s "${DATA_DIR}/tmp.list" ]; then\
