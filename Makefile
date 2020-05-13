@@ -377,7 +377,18 @@ nginx-conf-apply: nginx-conf-create nginx-conf-backup
 
 
 #Scaleway section
-SCW-instance-order: ${CLOUD_DIR}
+SCW-check-api:
+	@if curl -s --fail --connect-timeout 5 ${SCW_API} | egrep -q '"api":\s*"api-compute"'; then\
+		echo "SCW API: OK";\
+	else\
+		echo -e "\e[31mSCW API: KO!\e[0m";\
+		echo -e "endpoint: ${SCW_API}";\
+		ping -c 3 -W 5 `echo ${SCW_API} | sed 's|.*://||;s|/.*||'`;\
+		curl -s --fail --connect-timeout 5 -vv ${SCW_API};\
+		exit 1;\
+	fi
+
+SCW-instance-order: ${CLOUD_DIR} SCW-check-api
 	@if [ ! -f ${CLOUD_SERVER_ID_FILE} ]; then\
 		SCW_SERVER_OPTS=$$(echo '${SCW_SERVER_CONF}' '${SCW_SERVER_OPTS}' | jq -cs add);\
 		if [ ! -z "${VERBOSE}" ]; then\
