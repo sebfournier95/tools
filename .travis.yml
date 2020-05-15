@@ -44,6 +44,8 @@ script:
   - make docker-check CLOUD_CLI=aws || make docker-build CLOUD_CLI=aws &&
     if [[ "$TRAVIS_BRANCH" == "master" ]]; then
       make docker-push GIT_BRANCH="$TRAVIS_BRANCH" CLOUD_CLI=aws;
-      make remote-config-test GIT_BRANCH="$TRAVIS_BRANCH" remote_http_proxy=$REMOTE_HTTP_PROXY remote_https_proxy=$REMOTE_HTTP_PROXY;
+      if [[ "$BLOCK_DEPLOY" == "" ]]; then
+        make remote-config-test GIT_BRANCH="$TRAVIS_BRANCH" remote_http_proxy=$REMOTE_HTTP_PROXY remote_https_proxy=$REMOTE_HTTP_PROXY;
+      fi;
     fi
 

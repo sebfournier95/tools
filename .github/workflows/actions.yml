@@ -72,9 +72,11 @@ jobs:
           SSHPUB: ${{ secrets.SSHPUB }}
           SSH_AUTH_SOCK: /tmp/ssh_agent.sock
       - name: Remote config test
-        if: steps.extract_branch.outputs.branch == 'master' && "$BLOCK_DEPLOY" == ""
+        if: steps.extract_branch.outputs.branch == 'master'
         run: |
-          make remote-config-test GIT_BRANCH="$GIT_BRANCH" remote_http_proxy=$remote_http_proxy remote_https_proxy=$remote_https_proxy
+          if [[ "$BLOCK_DEPLOY" == "" ]]; then
+            make remote-config-test GIT_BRANCH="$GIT_BRANCH" remote_http_proxy=$remote_http_proxy remote_https_proxy=$remote_https_proxy;
+          fi
         env:
           GIT_BRANCH: ${{ steps.extract_branch.outputs.branch }}
           remote_http_proxy: ${{ secrets.remote_http_proxy }}
@@ -84,5 +86,5 @@ jobs:
           SCW_SERVER_OPTS: ${{ secrets.SCW_SERVER_OPTS }}
           STORAGE_ACCESS_KEY: ${{ secrets.STORAGE_ACCESS_KEY }}
           STORAGE_SECRET_KEY: ${{ secrets.STORAGE_SECRET_KEY }}
-          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
           BLOCK_DEPLOY: ${{ secrets.BLOCK_DEPLOY }}
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
