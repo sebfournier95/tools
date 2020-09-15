@@ -35,6 +35,10 @@ export DC_IMAGE_NAME = ${DC_PREFIX}
 export DC_BUILD_ARGS = --pull --no-cache
 export DC := /usr/local/bin/docker-compose
 
+# performance test confs
+export PERF=${APP_PATH}/performance
+export PERF_REPORTS=${PERF}/reports/
+
 AWS=${TOOLS_PATH}/aws
 SWIFT=${TOOLS_PATH}/swift
 RCLONE=/usr/bin/rclone
@@ -912,6 +916,12 @@ remote-install-monitor-nq:
 		ssh ${SSHOPTS} $$U@$$H "curl -sL https://raw.github.com/nodequery/nq-agent/master/nq-install.sh -o ${APP_GROUP}/${TOOLS}/nq-install.sh";\
 		ssh ${SSHOPTS} $$U@$$H "sudo bash ${APP_GROUP}/${TOOLS}/nq-install.sh ${NQ_TOKEN}";\
 	fi
+
+# test artillery
+test-api-generic:
+	export report=reports/`basename ${PERF_SCENARIO} .yml`-${PERF_TEST_ENV}.json ;\
+		${DC} -f ${DC_FILE}-artillery.yml run artillery run -e ${PERF_TEST_ENV} -o $${report} scenario.yml; \
+		${DC} -f ${DC_FILE}-artillery.yml run artillery report $${report}
 
 #GIT matchid projects section
 ${GIT_BACKEND}:
