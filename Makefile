@@ -38,6 +38,7 @@ export DC := /usr/local/bin/docker-compose
 # performance test confs
 export PERF=${APP_PATH}/performance
 export PERF_REPORTS=${PERF}/reports/
+export PERF_NAMES=${PERF}/ids.csv
 
 AWS=${TOOLS_PATH}/aws
 SWIFT=${TOOLS_PATH}/swift
