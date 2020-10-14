@@ -605,19 +605,26 @@ swift-get-catalog: ${CONFIG_SWIFT_FILE} ${DATA_DIR}
 
 swift-push:
 	${SWIFT} --os-auth-url ${OS_AUTH_URL} --auth-version ${OS_IDENTITY_API_VERSION}\
-			  --os-tenant-name ${OS_TENANT_NAME}\
-			  --os-storage-url ${OS_SWIFT_URL}${OS_SWIFT_ID}\
-			  --os-username ${OS_USERNAME}\
-			  --os-password ${OS_PASSWORD}\
-			  copy ${FILE} -d ${STORAGE_BUCKET}/$$(basename ${FILE})
+		--os-project-id ${OS_PROJECT_ID}\
+		--os-project-name ${OS_PROJECT_NAME}\
+		--os-user-domain-name ${OS_USER_DOMAIN_NAME}\
+		--os-username ${OS_USERNAME}\
+		--os-password ${OS_PASSWORD}\
+		--os-region-name ${OS_REGION_NAME}\
+		--insecure \
+		upload ${STORAGE_BUCKET} ${FILE}\
+		--object-name $$(basename ${FILE})
 
 swift-pull:
 	${SWIFT} --os-auth-url ${OS_AUTH_URL} --auth-version ${OS_IDENTITY_API_VERSION}\
-			  --os-tenant-name ${OS_TENANT_NAME}\
-			  --os-storage-url ${OS_SWIFT_URL}${OS_SWIFT_ID}\
-			  --os-username ${OS_USERNAME}\
-			  --os-password ${OS_PASSWORD}\
-			  download ${STORAGE_BUCKET} $$(basename ${FILE}) -o ${FILE}
+		--os-project-id ${OS_PROJECT_ID}\
+		--os-project-name ${OS_PROJECT_NAME}\
+		--os-user-domain-name ${OS_USER_DOMAIN_NAME}\
+		--os-username ${OS_USERNAME}\
+		--os-password ${OS_PASSWORD}\
+		--os-region-name ${OS_REGION_NAME}\
+		--insecure \
+		download ${STORAGE_BUCKET} $$(basename ${FILE}) -o ${PWD}/${FILE}
 
 #EC2 section
 
