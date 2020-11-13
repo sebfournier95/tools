@@ -587,6 +587,12 @@ rclone-push:
 rclone-pull:
 	@${RCLONE} -q --progress copy ${RCLONE_PROVIDER}:${STORAGE_BUCKET}/${FILE} ${DATA_DIR}
 
+rclone-sync-pull:
+	@${RCLONE} -q sync ${RCLONE_PROVIDER}:${STORAGE_BUCKET}/ ${DATA_DIR}/
+
+rclone-sync-push:
+	@${RCLONE} -q sync ${DATA_DIR}/ ${RCLONE_PROVIDER}:${STORAGE_BUCKET}/
+
 # swift section
 ${CONFIG_SWIFT_FILE}: ${CONFIG_DIR} docker-check
 
@@ -711,7 +717,11 @@ catalog-tag: ${CATALOG_TAG}
 
 storage-push: ${STORAGE_CLI}-push
 
+storage-sync-push: ${STORAGE_CLI}-sync-push
+
 storage-pull: ${STORAGE_CLI}-pull
+
+storage-sync-pull: ${STORAGE_CLI}-sync-pull
 
 #aws S3 section
 
