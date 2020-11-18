@@ -181,13 +181,13 @@ endif
 ifeq ("$(wildcard /usr/bin/jq)","")
 	sudo apt-get install -yqq jq; true
 endif
-ifeq ("$(wildcard /usr/lib/*/perl*/*/Date/Pcalc),"")
+ifeq ("$(wildcard /usr/lib/*/perl*/*/Date/Pcalc)","")
 	sudo apt-get install -yqq libdate-calc-perl; true
 endif
-ifeq ("$(wildcard /usr/lib/*/perl*/*/JSON/XS),"")
+ifeq ("$(wildcard /usr/lib/*/perl*/*/JSON/XS)","")
 	sudo apt-get install -yqq libjson-xs-perl; true
 endif
-ifeq ("$(wildcard /usr/lib/*/perl*/*/GEO/IP),"")
+ifeq ("$(wildcard /usr/lib/*/perl*/*/GEO/IP)","")
 	sudo apt-get install -yqq libgeo-ip-perl; true
 endif
 
