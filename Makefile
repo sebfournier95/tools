@@ -600,7 +600,7 @@ rclone-sync-pull:
 	@${RCLONE} -q sync ${RCLONE_PROVIDER}:${STORAGE_BUCKET}/ ${DATA_DIR}/
 
 rclone-sync-push:
-	@${RCLONE} -q sync --local-no-check-updated ${DATA_DIR}/ ${RCLONE_PROVIDER}:${STORAGE_BUCKET}/
+	@${RCLONE} -q sync ${DATA_DIR}/ ${RCLONE_PROVIDER}:${STORAGE_BUCKET}/
 
 # swift section
 ${CONFIG_SWIFT_FILE}: ${CONFIG_DIR} docker-check
