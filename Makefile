@@ -10,6 +10,8 @@ include /etc/os-release
 
 USE_TTY := $(shell test -t 1 && USE_TTY="-t")
 
+OS_TYPE := $(shell cat /etc/os-release | grep -E '^NAME=' | sed 's/^.*debian.*$$/DEB/I;s/^.*ubuntu.*$$/DEB/I;s/^.*fedora.*$$/RPM/I;s/.*centos.*$$/RPM/I;')
+
 #base paths
 APP_GROUP=matchID
 APP_GROUP_MAIL=matchid.project@gmail.com
@@ -128,6 +130,9 @@ NGINX_UPSTREAM_APPLIED_FILE=${NGINX_DIR}/${GIT_BRANCH}.${CLOUD_HOSTNAME}-upstrea
 version:
 	@echo ${APP_GROUP} ${APP} ${APP_VERSION}
 
+os-type:
+	@echo ${OS_TYPE}
+
 ${DATA_DIR}:
 	@if [ ! -d "${DATA_DIR}" ]; then mkdir -p ${DATA_DIR};fi
 
@@ -169,27 +174,18 @@ config-proxy:
 # system tools, widely used in matchID projects
 
 tools-install:
-ifeq ("$(wildcard /usr/bin/envsubst)","")
-	sudo apt-get install -yqq gettext; true
-endif
-ifeq ("$(wildcard /usr/bin/curl)","")
-	sudo apt-get install -yqq curl; true
-endif
-ifeq ("$(wildcard /usr/bin/gawk)","")
-	sudo apt-get install -yqq gawk; true
-endif
-ifeq ("$(wildcard /usr/bin/jq)","")
-	sudo apt-get install -yqq jq; true
-endif
-ifeq ("$(wildcard /usr/lib/*/perl*/*/Date/Pcalc)","")
-	sudo apt-get install -yqq libdate-calc-perl; true
-endif
-ifeq ("$(wildcard /usr/lib/*/perl*/*/JSON/XS)","")
-	sudo apt-get install -yqq libjson-xs-perl; true
-endif
-ifeq ("$(wildcard /usr/lib/*/perl*/*/GEO/IP)","")
-	sudo apt-get install -yqq libgeo-ip-perl; true
-endif
+	@if [ ! -f "/usr/bin/envsubst" ] || [ ! -f "/usr/bin/curl" ] ||\
+	   [ ! -f "/usr/bin/gawk" ] || [ ! -f "/usr/bin/gawk" ] || \
+		[ -z "$(wildcard /usr/lib/*/perl*/*/Date/Pcalc)" ] || \
+		[ -z "$(wildcard /usr/lib/*/perl*/*/JSON/XS)" ] || \
+		[ -z "$(wildcard /usr/lib/*/perl*/*/Geo/IP)" ] ; then\
+		if [ "${OS_TYPE}" = "DEB" ]; then\
+			sudo apt-get install -yqq gettext curl gawk jq libdate-calc-perl libjson-xs-perl libgeo-ip-perl; true;\
+		fi;\
+		if [ "${OS_TYPE}" = "RPM" ]; then\
+			sudo yum install -yqq gettext curl gawk jq libdate-calc-perl libjson-xs-perl libgeo-ip-perl; true;\
+		fi;\
+	fi
 
 #docker section
 docker-install: ${CONFIG_DOCKER_FILE} docker-config-proxy
