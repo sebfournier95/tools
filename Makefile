@@ -175,15 +175,19 @@ config-proxy:
 
 tools-install:
 	@if [ ! -f "/usr/bin/envsubst" ] || [ ! -f "/usr/bin/curl" ] ||\
-	   [ ! -f "/usr/bin/gawk" ] || [ ! -f "/usr/bin/gawk" ] || \
-		[ -z "$(wildcard /usr/lib/*/perl*/*/Date/Pcalc)" ] || \
-		[ -z "$(wildcard /usr/lib/*/perl*/*/JSON/XS)" ] || \
-		[ -z "$(wildcard /usr/lib/*/perl*/*/Geo/IP)" ] ; then\
+	   [ ! -f "/usr/bin/gawk" ] || [ ! -f "/usr/bin/gawk" ] ; then\
 		if [ "${OS_TYPE}" = "DEB" ]; then\
-			sudo apt-get install -yqq gettext curl gawk jq libdate-calc-perl libjson-xs-perl libgeo-ip-perl; true;\
+			sudo apt-get install -yqq gettext curl gawk jq; true;\
 		fi;\
 		if [ "${OS_TYPE}" = "RPM" ]; then\
-			sudo yum install -yqq gettext curl gawk jq libdate-calc-perl libjson-xs-perl libgeo-ip-perl; true;\
+			sudo yum install -y gettext curl gawk jq; true;\
+		fi;\
+	fi
+	@if [ -z "$(wildcard /usr/lib/*/perl*/*/Date/Pcalc)" ] || \
+		[ -z "$(wildcard /usr/lib/*/perl*/*/JSON/XS)" ] || \
+		[ -z "$(wildcard /usr/lib/*/perl*/*/Geo/IP)" ]; then\
+		if [ "${OS_TYPE}" = "DEB" ]; then\
+			libdate-calc-perl libjson-xs-perl libgeo-ip-perl; true;\
 		fi;\
 	fi
 
