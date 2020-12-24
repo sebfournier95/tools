@@ -207,36 +207,47 @@ docker-config-proxy:
 
 ${CONFIG_DOCKER_FILE}: ${CONFIG_DIR}
 ifeq ("$(wildcard /usr/bin/docker /usr/local/bin/docker)","")
-	echo install docker-ce, still to be tested
-	sudo echo '* libraries/restart-without-asking boolean true' | sudo debconf-set-selections
-	sudo apt-get update -yqq
-	sudo apt-get install -yqq \
-	apt-transport-https \
-	ca-certificates \
-	curl \
-	software-properties-common
-
-	curl -fsSL https://download.docker.com/linux/${ID}/gpg | sudo apt-key add -
-	sudo add-apt-repository \
-		"deb https://download.docker.com/linux/ubuntu \
-		`lsb_release -cs` \
-		stable"
-	sudo apt-get update -yqq
-	sudo apt-get install -yqq docker-ce
+	echo install docker-ce
+	@if [ "${OS_TYPE}" = "DEB" ]; then\
+		(sudo echo '* libraries/restart-without-asking boolean true' | sudo debconf-set-selections);\
+		sudo apt-get update -yqq;\
+		sudo apt-get install -yqq \
+			apt-transport-https \
+			ca-certificates \
+			curl \
+			software-properties-common;\
+		curl -fsSL https://download.docker.com/linux/${ID}/gpg | sudo apt-key add -;\
+		sudo add-apt-repository \
+			"deb https://download.docker.com/linux/ubuntu \
+			`lsb_release -cs` \
+			stable";\
+		sudo apt-get update -yqq;\
+		sudo apt-get install -yqq docker-ce;\
+	fi;
+	@if [ "${OS_TYPE}" = "RPM" ]; then\
+		sudo yum install -y yum-utils;\
+		RPM_FLAVOR=`grep -Ei '^ID=' /etc/os-release | sed 's/.*=//;s/"//g'`;\
+		sudo yum-config-manager \
+			--add-repo \
+			https://download.docker.com/linux/$$RPM_FLAVOR/docker-ce.repo;\
+		sudo yum install -y iptables docker-ce docker-ce-cli containerd.io;\
+		sudo gpasswd -a $$USER docker;\
+		sudo systemctl start docker;\
+	fi;
 endif
 	@(if (id -Gn ${USER} | grep -vc docker); then sudo usermod -aG docker ${USER} ;fi) > /dev/null
-ifeq ("$(wildcard /usr/bin/docker-compose /usr/local/bin/docker-compose)","")
+ifeq ("$(wildcard /usr/bin/docker-compose ${HOME}/.local/bin /usr/local/bin/docker-compose)","")
 	@echo installing docker-compose
-	@sudo curl -s -L https://github.com/docker/compose/releases/download/1.19.0/docker-compose-`uname -s`-`uname -m` -o /usr/local/bin/docker-compose
-	@sudo chmod +x /usr/local/bin/docker-compose
+	@mkdir -p ${HOME}/.local/bin && curl -s -L "https://github.com/docker/compose/releases/download/1.27.4/docker-compose-$(uname -s)-$(uname -m)" -o ${HOME}/.local/bin/docker-compose
+	@chmod +x ${HOME}/.local/bin/docker-compose
 endif
 	@touch ${CONFIG_DOCKER_FILE}
 
 docker-build:
-	if [ ! -z "${VERBOSE}" ];then\
+	@if [ ! -z "${VERBOSE}" ];then\
 		${DC} config;\
 	fi;
-	${DC} build $(DC_BUILD_ARGS)
+	@${DC} build $(DC_BUILD_ARGS)
 
 docker-tag:
 	@if [ "${GIT_BRANCH}" == "${GIT_BRANCH_MASTER}" ];then\
@@ -570,15 +581,24 @@ OS-instance-delete:
 # rclone section
 ${CONFIG_RCLONE_FILE}: ${CONFIG_DIR}
 	@if [ ! -f "${RCLONE}" ]; then\
-		curl -s -O https://downloads.rclone.org/rclone-current-linux-amd64.deb;\
-		sudo dpkg -i rclone-current-linux-amd64.deb; \
-		rm rclone-*-linux-amd64*;\
-		touch ${CONFIG_RCLONE_FILE};\
+		if [ "${OS_TYPE}" = "DEB" ]; then\
+			curl -s -O https://downloads.rclone.org/rclone-current-linux-amd64.deb;\
+			sudo dpkg -i rclone-current-linux-amd64.deb; \
+			rm rclone-*-linux-amd64*;\
+			touch ${CONFIG_RCLONE_FILE};\
+		fi;\
+		if [ "${OS_TYPE}" = "RPM" ]; then\
+			curl -s -O https://downloads.rclone.org/rclone-current-linux-amd64.rpm;\
+			sudo yum localinstall -y rclone-current-linux-amd64.rpm; \
+			rm rclone-*-linux-amd64*;\
+			touch ${CONFIG_RCLONE_FILE};\
+		fi;\
 	else\
 		touch ${CONFIG_RCLONE_FILE};\
 	fi
 
 config-rclone: ${CONFIG_RCLONE_FILE}
+
 
 rclone-get-catalog: ${CONFIG_RCLONE_FILE} ${DATA_DIR}
 	@echo getting ${STORAGE_BUCKET} catalog from ${RCLONE_PROVIDER} API
