@@ -344,13 +344,13 @@ ${CLOUD}-instance-wait-ssh: ${CLOUD_FIRST_USER_FILE} ${CLOUD_HOST_FILE}
 			((ssh ${SSHOPTS} $$SSHUSER@$$HOST sleep 1) );\
 			ret=$$? ; \
 			if [ "$$ret" -ne "0" ] ; then\
-				echo "waiting for ssh service on ${CLOUD} instance - $$timeout" ; \
+				echo -en "\rwaiting for ssh service on ${CLOUD} instance - $$timeout" ; \
 				if [ ! -z "${VERBOSE}" ];then\
 					echo 'cmd: ssh ${SSHOPTS} -o ConnectTimeout=1 '"$$SSHUSER@$$HOST"; \
 				fi;\
 			fi ;\
 			((timeout--)); sleep 1 ; \
-		done ;\
+		done ; echo ;\
 		exit $$ret;\
 	fi
 
@@ -445,9 +445,9 @@ SCW-instance-wait-running: SCW-instance-start
 		until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do\
 			curl -s ${SCW_API}/servers -H "X-Auth-Token: ${SCW_SECRET_TOKEN}" | jq -cr  ".servers[] | select (.id == \"$$SCW_SERVER_ID\") | .state" | (grep running > /dev/null);\
 			ret=$$? ; \
-			if [ "$$ret" -ne "0" ] ; then echo "waiting for scaleway instance $$SCW_SERVER_ID to start $$timeout" ; fi ;\
+			if [ "$$ret" -ne "0" ] ; then echo -en "\rwaiting for scaleway instance $$SCW_SERVER_ID to start $$timeout" ; fi ;\
 			((timeout--)); sleep 1 ; \
-		done ; \
+		done ; echo ;\
 		exit $$ret;\
 	fi
 
@@ -563,9 +563,9 @@ OS-instance-wait-running: ${CLOUD_SERVER_ID_FILE}
 		until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do\
 	  		nova list | sed 's/|//g' | egrep -v '\-\-\-|Name' | (egrep '\s${CLOUD_HOSTNAME}\s.*Running' > /dev/null) ;\
 	  		ret=$$? ; \
-	  		if [ "$$ret" -ne "0" ] ; then echo "waiting for openstack instance to start $$timeout" ; fi ;\
+			if [ "$$ret" -ne "0" ] ; then echo -en "\rwaiting for openstack instance to start $$timeout" ; fi ;\
 	  		((timeout--)); sleep 1 ; \
-		done ; \
+		done ; echo ;\
 		exit $$ret;\
 	fi
 
@@ -715,13 +715,13 @@ EC2-instance-get-host: EC2-instance-wait-running
 EC2-instance-wait-running: ${CLOUD_SERVER_ID_FILE}
 	@if [ ! -f "${CLOUD_UP_FILE}" ];then\
 		EC2_SERVER_ID=$$(cat ${CLOUD_SERVER_ID_FILE});\
-		timeout=${START_TIMEOUT} ; ret=1 ; \
+		timeout=${START_TIMEOUT} ; ret=1 ;\
 		until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do\
 			${AWS} ${EC2} describe-instances --instance-ids $$EC2_SERVER_ID | jq -c '.Reservations[].Instances[].State.Name' | (grep running > /dev/null);\
 			ret=$$? ; \
-			if [ "$$ret" -ne "0" ] ; then echo "waiting for EC2 instance $$EC2_SERVER_ID to start $$timeout" ; fi ;\
+			if [ "$$ret" -ne "0" ] ; then echo -en "\rwaiting for EC2 instance $$EC2_SERVER_ID to start $$timeout" ; fi ;\
 			((timeout--)); sleep 1 ; \
-		done ;\
+		done ; echo ;\
 		exit $$ret;\
 	fi
 
