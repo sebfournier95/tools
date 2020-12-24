@@ -611,7 +611,7 @@ datagouv-to-rclone: rclone-get-catalog datagouv-get-files
 	done
 
 rclone-push:
-	@${RCLONE} -q --progress --s3-chunk-size ${STORAGE_CHUNK_SIZE} copy ${FILE} ${RCLONE_PROVIDER}:${STORAGE_BUCKET}
+	@${RCLONE} -q --progress ${STORAGE_OPTIONS} --s3-chunk-size ${STORAGE_CHUNK_SIZE} copy ${FILE} ${RCLONE_PROVIDER}:${STORAGE_BUCKET}
 
 rclone-pull:
 	@${RCLONE} -q --progress copy ${RCLONE_PROVIDER}:${STORAGE_BUCKET}/${FILE} ${DATA_DIR}
@@ -620,7 +620,7 @@ rclone-sync-pull:
 	@${RCLONE} -q sync ${RCLONE_PROVIDER}:${STORAGE_BUCKET}/ ${DATA_DIR}/
 
 rclone-sync-push:
-	@${RCLONE} -q sync ${DATA_DIR}/ ${RCLONE_PROVIDER}:${STORAGE_BUCKET}/
+	@${RCLONE} -q sync ${STORAGE_OPTIONS} ${DATA_DIR}/ ${RCLONE_PROVIDER}:${STORAGE_BUCKET}/
 
 # swift section
 ${CONFIG_SWIFT_FILE}: ${CONFIG_DIR} docker-check
