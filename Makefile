@@ -35,7 +35,7 @@ export DC_PREFIX := $(shell echo ${APP} | tr '[:upper:]' '[:lower:]')
 export DC_NETWORK := $(shell echo ${APP} | tr '[:upper:]' '[:lower:]')
 export DC_IMAGE_NAME = ${DC_PREFIX}
 export DC_BUILD_ARGS = --pull --no-cache
-export DC := /usr/local/bin/docker-compose
+export DC := docker-compose
 
 # performance test confs
 export PERF=${APP_PATH}/performance
@@ -236,10 +236,11 @@ ifeq ("$(wildcard /usr/bin/docker /usr/local/bin/docker)","")
 	fi;
 endif
 	@(if (id -Gn ${USER} | grep -vc docker); then sudo usermod -aG docker ${USER} ;fi) > /dev/null
-ifeq ("$(wildcard /usr/bin/docker-compose ${HOME}/.local/bin /usr/local/bin/docker-compose)","")
+ifeq ("$(wildcard /usr/bin/docker-compose ${HOME}/.local/bin/docker-compose /usr/local/bin/docker-compose)","")
 	@echo installing docker-compose
-	@mkdir -p ${HOME}/.local/bin && curl -s -L "https://github.com/docker/compose/releases/download/1.27.4/docker-compose-$(uname -s)-$(uname -m)" -o ${HOME}/.local/bin/docker-compose
+	@mkdir -p ${HOME}/.local/bin && curl -s -L "https://github.com/docker/compose/releases/download/1.27.4/docker-compose-$$(uname -s)-$$(uname -m)" -o ${HOME}/.local/bin/docker-compose
 	@chmod +x ${HOME}/.local/bin/docker-compose
+	@sudo cp ${HOME}/.local/bin/docker-compose /usr/local/bin
 endif
 	@touch ${CONFIG_DOCKER_FILE}
 
