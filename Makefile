@@ -795,6 +795,9 @@ datagouv-get-files: ${DATAGOUV_CATALOG}
 				grep $$file ${DATA_DIR}/tmp.list | awk '{print $$2}' > ${DATA_DIR}/$$file.sha1.src; \
 				sha1sum < ${DATA_DIR}/$$file | awk '{print $$1}' > ${DATA_DIR}/$$file.sha1.dst; \
 				((diff ${DATA_DIR}/$$file.sha1.src ${DATA_DIR}/$$file.sha1.dst > /dev/null) || echo error downloading $$file); \
+				if [ "$$file" \< "deces-2011" ];then\
+					recode latin1..utf8 $$file;\
+				fi;\
 				gzip ${DATA_DIR}/$$file; \
 				sha1sum ${DATA_DIR}/$$file.gz > ${DATA_DIR}/$$file.gz.sha1; \
 				((i++));\
