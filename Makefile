@@ -780,7 +780,7 @@ ${DATAGOUV_CATALOG}: config ${DATA_DIR}
 datagouv-get-catalog: ${DATAGOUV_CATALOG}
 
 datagouv-get-files: ${DATAGOUV_CATALOG}
-	@if [ -f "${CATALOG}" ]; then\
+	@if [ -s "${CATALOG}" ]; then\
 		(echo egrep -v $$(cat ${CATALOG} | tr '\n' '|' | sed 's/.gz//g;s/^/"(/;s/|$$/)"/') ${DATAGOUV_CATALOG} | sh > ${DATA_DIR}/tmp.list) || true;\
 	else\
 		cat ${DATAGOUV_CATALOG} | egrep '/${FILES_PATTERN}$$' > ${DATA_DIR}/tmp.list;\
@@ -796,7 +796,7 @@ datagouv-get-files: ${DATAGOUV_CATALOG}
 				sha1sum < ${DATA_DIR}/$$file | awk '{print $$1}' > ${DATA_DIR}/$$file.sha1.dst; \
 				((diff ${DATA_DIR}/$$file.sha1.src ${DATA_DIR}/$$file.sha1.dst > /dev/null) || echo error downloading $$file); \
 				if [ "$$file" \< "deces-2011" ];then\
-					recode latin1..utf8 $$file;\
+					recode latin1..utf8 ${DATA_DIR}/$$file;\
 				fi;\
 				gzip ${DATA_DIR}/$$file; \
 				sha1sum ${DATA_DIR}/$$file.gz > ${DATA_DIR}/$$file.gz.sha1; \
