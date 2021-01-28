@@ -175,12 +175,12 @@ config-proxy:
 
 tools-install:
 	@if [ ! -f "/usr/bin/envsubst" ] || [ ! -f "/usr/bin/curl" ] ||\
-	   [ ! -f "/usr/bin/gawk" ] || [ ! -f "/usr/bin/gawk" ] || [ ! -f "/usr/bin/jq" ] ; then\
+	   [ ! -f "/usr/bin/gawk" ] || [ ! -f "/usr/bin/gawk" ] || [ ! -f "/usr/bin/jq" ] || [ ! -f "/usr/bin/recode" ] ; then\
 		if [ "${OS_TYPE}" = "DEB" ]; then\
-			sudo apt-get install -yqq gettext curl gawk jq; true;\
+			sudo apt-get install -yqq gettext curl recode gawk jq; true;\
 		fi;\
 		if [ "${OS_TYPE}" = "RPM" ]; then\
-			sudo yum install -y gettext curl gawk jq; true;\
+			sudo yum install -y gettext curl recode gawk jq; true;\
 		fi;\
 	fi
 	@if [ -z "$(wildcard /usr/lib/*/perl*/*/Date/Pcalc)" ] || \
