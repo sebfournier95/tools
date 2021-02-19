@@ -189,6 +189,9 @@ tools-install:
 		if [ "${OS_TYPE}" = "DEB" ]; then\
 			sudo apt-get install -yqq libdate-calc-perl libjson-xs-perl libgeo-ip-perl; true;\
 		fi;\
+		if [ "${OS_TYPE}" = "RPM" ]; then\
+			sudo yum install -y perl-Date-Calc perl-Geo-IP perl-JSON-XS perl-Digest-SHA; true;\
+		fi;\
 	fi
 
 #docker section
