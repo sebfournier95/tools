@@ -606,7 +606,7 @@ config-rclone: ${CONFIG_RCLONE_FILE}
 
 rclone-get-catalog: ${CONFIG_RCLONE_FILE} ${DATA_DIR}
 	@echo getting ${STORAGE_BUCKET} catalog from ${RCLONE_PROVIDER} API
-	@${RCLONE} -q ls ${RCLONE_PROVIDER}:${STORAGE_BUCKET} | awk '{print $$NF}' | egrep '^${FILES_PATTERN}$$' | sort > ${CATALOG}
+	@${RCLONE} -q ${RCLONE_OPTS} ls ${RCLONE_PROVIDER}:${STORAGE_BUCKET} | awk '{print $$NF}' | egrep '^${FILES_PATTERN}$$' | sort > ${CATALOG}
 
 datagouv-to-rclone: rclone-get-catalog datagouv-get-files
 	@for file in $$(ls ${DATA_DIR} | egrep '^${FILES_PATTERN}$$' | grep -v tmp.list);do\
@@ -615,10 +615,10 @@ datagouv-to-rclone: rclone-get-catalog datagouv-get-files
 	done
 
 rclone-push:
-	@${RCLONE} -q --progress ${STORAGE_OPTIONS} --s3-chunk-size ${STORAGE_CHUNK_SIZE} copy ${FILE} ${RCLONE_PROVIDER}:${STORAGE_BUCKET}
+	@${RCLONE} ${RCLONE_OPTS} -q --progress ${STORAGE_OPTIONS} --s3-chunk-size ${STORAGE_CHUNK_SIZE} copy ${FILE} ${RCLONE_PROVIDER}:${STORAGE_BUCKET}
 
 rclone-pull:
-	@${RCLONE} -q --progress copy ${RCLONE_PROVIDER}:${STORAGE_BUCKET}/${FILE} ${DATA_DIR}
+	@${RCLONE} ${RCLONE_OPTS} -q --progress copy ${RCLONE_PROVIDER}:${STORAGE_BUCKET}/${FILE} ${DATA_DIR}
 
 rclone-sync-pull:
 	@${RCLONE} -q sync ${RCLONE_PROVIDER}:${STORAGE_BUCKET}/ ${DATA_DIR}/
