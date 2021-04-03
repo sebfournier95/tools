@@ -635,7 +635,7 @@ rclone-sync-push:
 	@${RCLONE} -q sync ${STORAGE_OPTIONS} ${DATA_DIR}/ ${RCLONE_PROVIDER}:${STORAGE_BUCKET}/
 
 rclone-mount:
-	@${RCLONE} -q --vfs-cache-mode write ${STORAGE_OPTIONS} ${RCLONE_PROVIDER}:${STORAGE_BUCKET} ${DATA_DIR}
+	@${RCLONE} -q mount --daemon --vfs-cache-mode writes ${STORAGE_OPTIONS} ${RCLONE_PROVIDER}:${STORAGE_BUCKET} ${DATA_DIR}
 
 # swift section
 ${CONFIG_SWIFT_FILE}: ${CONFIG_DIR} docker-check
