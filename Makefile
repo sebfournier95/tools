@@ -634,6 +634,9 @@ rclone-sync-pull:
 rclone-sync-push:
 	@${RCLONE} -q sync ${STORAGE_OPTIONS} ${DATA_DIR}/ ${RCLONE_PROVIDER}:${STORAGE_BUCKET}/
 
+rclone-mount:
+	@${RCLONE} -q --vfs-cache-mode write ${STORAGE_OPTIONS} ${RCLONE_PROVIDER}:${STORAGE_BUCKET} ${DATA_DIR}
+
 # swift section
 ${CONFIG_SWIFT_FILE}: ${CONFIG_DIR} docker-check
 
@@ -763,6 +766,8 @@ storage-sync-push: ${STORAGE_CLI}-sync-push
 storage-pull: ${STORAGE_CLI}-pull
 
 storage-sync-pull: ${STORAGE_CLI}-sync-pull
+
+storage-mount: ${STORAGE_CLI}-mount
 
 #aws S3 section
 
