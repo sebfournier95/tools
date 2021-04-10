@@ -18,10 +18,11 @@ APP_GROUP_MAIL=matchid.project@gmail.com
 APP_GROUP_DOMAIN=matchid.io
 TOOLS = tools
 TOOLS_PATH := $(shell pwd)
+CLOUD=SCW
 export CLOUD_CLI=aws
 export STORAGE_CLI=rclone
 APP_GROUP_PATH := $(shell dirname ${TOOLS_PATH})
-export APP = ${CLOUD_CLI}
+export APP = tools
 export APP_PATH = ${TOOLS_PATH}
 
 GIT_ROOT=https://github.com/matchid-project
@@ -76,9 +77,9 @@ SSH_TIMEOUT = 90
 
 EC2=ec2 ${EC2_ENDPOINT_OPTION} --profile ${EC2_PROFILE}
 
+SNAPSHOT_TIMEOUT = 120
 START_TIMEOUT = 120
 CLOUD_DIR=${TOOLS_PATH}/cloud
-CLOUD=SCW
 
 NGINX_DIR=${TOOLS_PATH}/nginx
 NGINX_UPSTREAM_REMOTE_PATH=/etc/nginx/conf.d
@@ -108,6 +109,8 @@ CLOUD_GROUP=$(shell echo ${APP_GROUP} | tr '[:upper:]' '[:lower:]')
 CLOUD_APP=$(shell echo ${APP} | tr '[:upper:]' '[:lower:]')
 CLOUD_SSHKEY_FILE=${CLOUD_DIR}/${CLOUD}.sshkey
 CLOUD_SERVER_ID_FILE=${CLOUD_DIR}/${CLOUD}.id
+CLOUD_SNAPSHOT_ID_FILE=${CLOUD_DIR}/${CLOUD}.snapshot.id
+CLOUD_IMAGE_ID_FILE=${CLOUD_DIR}/${CLOUD}.image.id
 CLOUD_HOST_FILE=${CLOUD_DIR}/${CLOUD}.host
 CLOUD_FIRST_USER_FILE=${CLOUD_DIR}/${CLOUD}.user.first
 CLOUD_USER_FILE=${CLOUD_DIR}/${CLOUD}.user
@@ -417,13 +420,20 @@ SCW-check-api:
 		exit 1;\
 	fi
 
-SCW-instance-update:
+SCW-instance-base-update:
 	@SCW_IMAGE_ID=$$(curl -s -H "X-Auth-Token: ${SCW_SECRET_TOKEN}" ${SCW_API}/images |\
 		jq -c '.images[] | [.creation_date, .name, .id, .arch]' | grep x86 | grep Fossa | sort | tail -1 | jq '.[2]' |\
 		sed 's/"//g';);\
-		if [ "${SCW_IMAGE_ID}" != "$${SCW_IMAGE_ID}" ]; then\
+		if [ "${SCW_BASE_IMAGE_ID}" != "$${SCW_IMAGE_ID}" ]; then\
+			(echo SCW_BASE_IMAGE_ID=$${SCW_IMAGE_ID} >> artifacts.SCW);\
 			(echo SCW_IMAGE_ID=$${SCW_IMAGE_ID} >> artifacts.SCW);\
-		fi\
+		fi
+
+SCW-instance-update: SCW-instance-base-update remote-config SCW-instance-image remote-clean
+	@if [ -f "${CLOUD_IMAGE_ID_FILE}" ];then\
+		SCW_IMAGE_ID=$$(cat CLOUD_IMAGE_ID_FILE);\
+		(echo SCW_IMAGE_ID=$${SCW_IMAGE_ID} >> artifacts.SCW);\
+	fi
 
 SCW-instance-order: ${CLOUD_DIR} SCW-check-api
 	@if [ ! -f ${CLOUD_SERVER_ID_FILE} ]; then\
@@ -511,8 +521,49 @@ SCW-instance-delete-invalid: SCW-instance-get-tagged-ids-invalid
 		(echo no ${CLOUD_TAGGED_IDS_INVALID_FILE} for deletion);\
 	fi
 
+${CLOUD_SNAPSHOT_ID_FILE}.done: ${CLOUD_DIR}
+	@if [ ! -f "${CLOUD_SNAPSHOT_ID_FILE}.done" ];then\
+		CLOUD_VOLUME_ID=$$(curl -s --fail ${SCW_API}/servers -H "X-Auth-Token: ${SCW_SECRET_TOKEN}" -H "Content-Type: application/json"  \
+			| jq -cr '.servers[] | select(.name=="${CLOUD_HOSTNAME}" and (.tags[0] | contains("${GIT_BRANCH}")) and (.tags[1] | contains("${CLOUD_TAG}"))) | .volumes["0"].id'\
+		);\
+		curl -s --fail ${SCW_API}/snapshots -H "X-Auth-Token: ${SCW_SECRET_TOKEN}" -H "Content-Type: application/json" \
+			-d '{"name": "${CLOUD_HOSTNAME}", "organization": "${SCW_ORGANIZATION_ID}", "volume_id": "'$${CLOUD_VOLUME_ID}'"}' \
+			| jq -r '.snapshot.id' > ${CLOUD_SNAPSHOT_ID_FILE};\
+		CLOUD_SNAPSHOT_ID=$$(cat ${CLOUD_SNAPSHOT_ID_FILE});\
+		echo -n snapshotting volume $${CLOUD_VOLUME_ID} to $${CLOUD_SNAPSHOT_ID};\
+		timeout=${SNAPSHOT_TIMEOUT} ; ret=1 ;\
+		until [ "$$timeout" -le 0 -o "$$ret" -eq "0"  ] ; do\
+			curl -s ${SCW_API}/snapshots/$${CLOUD_SNAPSHOT_ID} -H "X-Auth-Token: ${SCW_SECRET_TOKEN}" | jq -cr  ".snapshot.state" | (grep available > /dev/null);\
+			ret=$$? ; \
+			if [ "$$ret" -ne "0" ] ; then echo -en "." ; fi ;\
+			((timeout--));((timeout--)); sleep 2 ; \
+		done ; echo ;\
+		if [ "$$ret" -ne "0" ]; then\
+			exit $$ret;\
+		fi;\
+		touch ${CLOUD_SNAPSHOT_ID_FILE}.done;\
+	fi
+
+SCW-instance-snapshot: ${CLOUD_SNAPSHOT_ID_FILE}.done
+
+SCW-instance-snapshot-delete: ${CLOUD_SNAPSHOT_ID_FILE}.done
+	\
+	CLOUD_SNAPSHOT_ID=$$(cat ${CLOUD_SNAPSHOT_ID_FILE});\
+	echo deleting snapshot $${CLOUD_SNAPSHOT_ID};\
+	curl --fail -XDELETE ${SCW_API}/snapshots/$${CLOUD_SNAPSHOT_ID} -H "X-Auth-Token: ${SCW_SECRET_TOKEN}" && \
+	rm ${CLOUD_SNAPSHOT_ID_FILE}.done ${CLOUD_SNAPSHOT_ID_FILE}
+
+SCW-instance-image: ${CLOUD_SNAPSHOT_ID_FILE}.done
+	@\
+	if [ ! -f "${CLOUD_IMAGE_ID_FILE}" ];then\
+		CLOUD_SNAPSHOT_ID=$$(cat ${CLOUD_SNAPSHOT_ID_FILE});\
+		curl -s --fail ${SCW_API}/images -H "X-Auth-Token: ${SCW_SECRET_TOKEN}" -H "Content-Type: application/json" \
+			-d '{"name":"${CLOUD_HOSTNAME}", "organization": "${SCW_ORGANIZATION_ID}", "arch": "x86_64", "root_volume": "'$$CLOUD_SNAPSHOT_ID'", "public": "true"}' \
+			| jq -cr '.image.id' > ${CLOUD_IMAGE_ID_FILE};\
+	fi
+
 SCW-instance-get-tagged-ids: ${CLOUD_DIR}
-	@if [ ! -f "${CLOUD_TAGGED_IDS_FILE}" ];then\
+	if [ ! -f "${CLOUD_TAGGED_IDS_FILE}" ];then\
 		curl -s ${SCW_API}/servers -H "X-Auth-Token: ${SCW_SECRET_TOKEN}" -H "Content-Type: application/json"  \
 			| jq -cr '.servers[] | select(.name=="${CLOUD_HOSTNAME}" and (.tags[0] | contains("${GIT_BRANCH}")) and (.tags[1] | contains("${CLOUD_TAG}"))) | .id'\
 			> ${CLOUD_TAGGED_IDS_FILE};\
@@ -867,6 +918,16 @@ ${CONFIG_REMOTE_FILE}: cloud-instance-up remote-config-proxy ${CONFIG_DIR}
 			touch ${CONFIG_REMOTE_FILE};\
 			touch ${CONFIG_TOOLS_FILE};\
 		fi
+
+remote-reboot-start:
+		@\
+		H=$$(cat ${CLOUD_HOST_FILE});\
+		U=$$(cat ${CLOUD_USER_FILE});\
+		ssh ${SSHOPTS} $$U@$$H sudo reboot;\
+		echo ${CLOUD} instance is rebooting;\
+		rm ${CLOUD_UP_FILE};
+
+remote-reboot: remote-reboot-start cloud-instance-up
 
 remote-config: ${CONFIG_REMOTE_FILE}
 
