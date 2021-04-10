@@ -823,6 +823,7 @@ datagouv-get-files: ${DATAGOUV_CATALOG}
 			echo no new file downloaded from datagouv;\
 		else\
 			echo "$$i file(s) downloaded from datagouv";\
+			make slack-notification SLACK_MSG="$$i new file(s) from datagouv";\
 		fi;\
 	else\
 		echo no new file downloaded from datagouv;\
@@ -989,6 +990,9 @@ test-api-generic:
 	export report=reports/`basename ${PERF_SCENARIO} .yml`-${PERF_TEST_ENV}.json ;\
 		${DC} -f ${DC_FILE}-artillery.yml run artillery run -e ${PERF_TEST_ENV} -o $${report} scenario.yml; \
 		${DC} -f ${DC_FILE}-artillery.yml run artillery report $${report}
+
+slack-nofication:
+	@if [ ! -z "${SLACK_WEBHOOK}" ]; then curl -X POST --data-urlencode 'payload={\"channel\": \"#matchid\", \"username\": \"matchid-bot\", \"attachments\": [{\"fallback\":\"${SLACK_TITLE}\",\"pretext\":\"${SLACK_TITLE}\",\"color\":\"#D00000\",\"fields\":[{\"title\":\"Remarques\",\"value\":\"${SLACK_MSG}\",\"short\":false}]}], \"icon_url\": \"https://github.com/matchID-project/matchID-project.github.io/raw/master/assets/images/logo-square.png\"}' https://hooks.slack.com/services/${SLACK_WEBHOOK};fi
 
 #GIT matchid projects section
 ${GIT_BACKEND}:
