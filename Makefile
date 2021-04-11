@@ -177,23 +177,12 @@ config-proxy:
 # system tools, widely used in matchID projects
 
 tools-install:
-	@if [ ! -f "/usr/bin/envsubst" ] || [ ! -f "/usr/bin/curl" ] ||\
-	   [ ! -f "/usr/bin/gawk" ] || [ ! -f "/usr/bin/gawk" ] || [ ! -f "/usr/bin/jq" ] || [ ! -f "/usr/bin/recode" ] ; then\
+	@if [ ! -f "/usr/bin/curl" ] || [ ! -f "/usr/bin/jq" ] ; then\
 		if [ "${OS_TYPE}" = "DEB" ]; then\
-			sudo apt-get install -yqq gettext curl recode gawk jq; true;\
+			sudo apt-get install -yqq curl jq; true;\
 		fi;\
 		if [ "${OS_TYPE}" = "RPM" ]; then\
-			sudo yum install -y gettext curl recode gawk jq; true;\
-		fi;\
-	fi
-	@if [ -z "$(wildcard /usr/lib/*/perl*/*/Date/Pcalc)" ] || \
-		[ -z "$(wildcard /usr/lib/*/perl*/*/JSON/XS)" ] || \
-		[ -z "$(wildcard /usr/lib/*/perl*/*/Geo/IP)" ]; then\
-		if [ "${OS_TYPE}" = "DEB" ]; then\
-			sudo apt-get install -yqq libdate-calc-perl libjson-xs-perl libgeo-ip-perl; true;\
-		fi;\
-		if [ "${OS_TYPE}" = "RPM" ]; then\
-			sudo yum install -y perl-Date-Calc perl-Geo-IP perl-JSON-XS perl-Digest-SHA; true;\
+			sudo yum install -y curl jq; true;\
 		fi;\
 	fi
 
@@ -854,6 +843,14 @@ datagouv-get-files: ${DATAGOUV_CATALOG}
 	fi
 
 	@if [ -s "${DATA_DIR}/tmp.list" ]; then\
+		if [ ! -f "/usr/bin/recode" ] ; then\
+			if [ "${OS_TYPE}" = "DEB" ]; then\
+				sudo apt-get install -yqq recode; true;\
+			fi;\
+			if [ "${OS_TYPE}" = "RPM" ]; then\
+				sudo yum install -y recode; true;\
+			fi;\
+		fi;\
 		i=0;\
 		for file in $$(awk '{print $$1}' ${DATA_DIR}/tmp.list); do\
 			if [ ! -f ${DATA_DIR}/$$file.gz.sha1 ]; then\
