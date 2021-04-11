@@ -424,15 +424,15 @@ SCW-instance-base-update:
 	@SCW_IMAGE_ID=$$(curl -s -H "X-Auth-Token: ${SCW_SECRET_TOKEN}" ${SCW_API}/images |\
 		jq -c '.images[] | [.creation_date, .name, .id, .arch]' | grep x86 | grep Fossa | sort | tail -1 | jq '.[2]' |\
 		sed 's/"//g';);\
-		if [ "${SCW_BASE_IMAGE_ID}" != "$${SCW_IMAGE_ID}" ]; then\
-			(echo SCW_BASE_IMAGE_ID=$${SCW_IMAGE_ID} >> artifacts.SCW);\
+		if [ "${SCW_IMAGE_BASE_ID}" != "$${SCW_IMAGE_ID}" ]; then\
+			(echo SCW_IMAGE_BASE_ID=$${SCW_IMAGE_ID} >> artifacts.SCW);\
 			(echo SCW_IMAGE_ID=$${SCW_IMAGE_ID} >> artifacts.SCW);\
 		fi
 
 SCW-instance-update: SCW-instance-base-update remote-config SCW-instance-image remote-clean
 	@if [ -f "${CLOUD_IMAGE_ID_FILE}" ];then\
-		SCW_IMAGE_ID=$$(cat CLOUD_IMAGE_ID_FILE);\
-		(echo SCW_IMAGE_ID=$${SCW_IMAGE_ID} >> artifacts.SCW);\
+		SCW_IMAGE_ID=$$(cat ${CLOUD_IMAGE_ID_FILE});\
+		(echo SCW_IMAGE_$(shell echo ${APP} | tr '[:lower:]' '[:upper:]')_ID=$${SCW_IMAGE_ID} >> artifacts.SCW);\
 	fi
 
 SCW-instance-order: ${CLOUD_DIR} SCW-check-api
