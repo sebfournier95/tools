@@ -919,7 +919,13 @@ ${CONFIG_REMOTE_FILE}: cloud-instance-up remote-config-proxy ${CONFIG_DIR}
 			touch ${CONFIG_TOOLS_FILE};\
 		fi
 
-remote-reboot-start:
+remote-docker-pull: ${CLOUD_HOST_FILE} ${CLOUD_USER_FILE}
+	@\
+		H=$$(cat ${CLOUD_HOST_FILE});\
+		U=$$(cat ${CLOUD_USER_FILE});\
+		ssh ${SSHOPTS} $$U@$$H docker pull ${DOCKER_IMAGE};
+
+remote-reboot-start: ${CLOUD_HOST_FILE} ${CLOUD_USER_FILE}
 		@\
 		H=$$(cat ${CLOUD_HOST_FILE});\
 		U=$$(cat ${CLOUD_USER_FILE});\
