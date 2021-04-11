@@ -36,9 +36,9 @@ jobs:
         id: extract_branch
       - name: Build docker aws
         run: |
-          make docker-check || make docker-build &&\
+          make docker-check || make docker-build CLOUD_CLI=aws &&\
           if [[ "$GIT_BRANCH" == "master" ]]; then
-            make docker-push GIT_BRANCH="$GIT_BRANCH"
+            make docker-push GIT_BRANCH="$GIT_BRANCH" CLOUD_CLI=aws
           fi
         env:
           GIT_BRANCH: ${{ steps.extract_branch.outputs.branch }}

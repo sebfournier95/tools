@@ -18,10 +18,10 @@ RUN apk add --no-cache \
     bash \
     rsync \
     openssh-client \
-    python \
+    python3 \
     groff \
-    py-pip && \
-    pip install awscli awscli_plugin_endpoint --upgrade --user && \
+    py3-pip && \
+    pip3 install awscli awscli_plugin_endpoint --upgrade --user && \
     mv /root/.local/bin/* /usr/local/bin && \
     apk -v --purge del py-pip
 

@@ -19,10 +19,10 @@ APP_GROUP_DOMAIN=matchid.io
 TOOLS = tools
 TOOLS_PATH := $(shell pwd)
 CLOUD=SCW
-export CLOUD_CLI=aws
+export CLOUD_CLI=tools
 export STORAGE_CLI=rclone
 APP_GROUP_PATH := $(shell dirname ${TOOLS_PATH})
-export APP = tools
+export APP = ${CLOUD_CLI}
 export APP_PATH = ${TOOLS_PATH}
 
 GIT_ROOT=https://github.com/matchid-project
