@@ -13,7 +13,7 @@ VOLUME /$app_path/data
 WORKDIR /$app_path
 
 RUN apk add --no-cache \
-    python3 \
+    python3 py3-pip \
     gcc python3-dev musl-dev linux-headers
 RUN pip3 install --upgrade pip
 RUN pip3 install --user setuptools python-swiftclient python-keystoneclient
