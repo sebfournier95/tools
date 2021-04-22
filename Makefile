@@ -975,7 +975,7 @@ remote-actions: remote-deploy
 		fi
 
 remote-test-api-in-vpc: ${CLOUD}-instance-get-tagged-hosts
-	@if [ -f "${CONFIG_APP_FILE}" ];then\
+	if [ -f "${CONFIG_APP_FILE}" ];then\
 		U=$$(cat ${CLOUD_USER_FILE});\
 		for H in $$(cat ${CLOUD_TAGGED_HOSTS_FILE});do\
 			(\
