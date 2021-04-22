@@ -1025,7 +1025,7 @@ local-test-api:
 	) || (echo "api test on localhost:${PORT}/${API_TEST_PATH} : ko" && exit 1);
 
 remote-test-api:
-	@if [ ! -f "${NGINX_UPSTREAM_APPLIED_FILE}" ];then\
+	if [ ! -f "${NGINX_UPSTREAM_APPLIED_FILE}" ];then\
 		echo "please make nginx-conf-apply first";\
 	else\
 		(\
