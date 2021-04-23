@@ -1058,6 +1058,13 @@ remote-install-monitor-nq:
 		ssh ${SSHOPTS} $$U@$$H "sudo bash ${APP_GROUP}/${TOOLS}/nq-install.sh ${NQ_TOKEN}";\
 	fi
 
+cdn-cache-purge:
+	@if [ ! -z "${CDN_ZONE_ID}" -a ! -z "${CDN_TOKEN}" ];then\
+		((curl -s --fail -XPOST "https://api.cloudflare.com/client/v4/zones/${CDN_ZONE_ID}/purge_cache" -d '{"purge_everything":true}' \
+			-H "Authorization: Bearer ${CDN_TOKEN}" -H "Content-Type:application/json" | jq '.success' | grep -q true\
+			&& echo CDN: cache purged) || echo CDN: failed to purge cache);\
+	fi
+
 # test artillery
 test-api-generic:
 	export report=reports/`basename ${PERF_SCENARIO} .yml`-${PERF_TEST_ENV}.json ;\
