@@ -75,7 +75,7 @@ SSHKEY = ${SSHKEY_PRIVATE}.pub
 SSHKEYNAME = ${TOOLS}
 SSH_TIMEOUT = 90
 
-export CURL_RETRY_OPTS = --retry 5 --retry-delay 2
+export CURL_OPTS = --retry 5 --retry-delay 2 -A "GitHub Actions"
 
 EC2=ec2 ${EC2_ENDPOINT_OPTION} --profile ${EC2_PROFILE}
 
@@ -982,9 +982,9 @@ remote-test-api-in-vpc: ${CLOUD}-instance-get-tagged-hosts
 				(\
 					((\
 						if [ -z "${API_TEST_DATA}" ];then\
-							ssh ${SSHOPTS} $$U@$$H "curl --noproxy '*' -s --fail ${CURL_RETRY_OPTS} localhost:${PORT}/${API_TEST_PATH}";\
+							ssh ${SSHOPTS} $$U@$$H "curl --noproxy '*' -s --fail ${CURL_OPTS} localhost:${PORT}/${API_TEST_PATH}";\
 						else\
-							echo '${API_TEST_DATA}' | ssh ${SSHOPTS} $$U@$$H "curl --noproxy '*' -s -XPOST --fail ${CURL_RETRY_OPTS} localhost:${PORT}/${API_TEST_PATH} -H 'Content-Type: application/json' -d @-";\
+							echo '${API_TEST_DATA}' | ssh ${SSHOPTS} $$U@$$H "curl --noproxy '*' -s -XPOST --fail ${CURL_OPTS} localhost:${PORT}/${API_TEST_PATH} -H 'Content-Type: application/json' -d @-";\
 						fi;\
 					) || (echo "api test on $$H (ssh) localhost:${PORT}/${API_TEST_PATH} : ko" && exit 1))\
 					|\
@@ -1009,7 +1009,7 @@ local-test-api:
 				if [ -z "${API_TEST_DATA}" ];then\
 					curl --noproxy '*' -s --fail localhost:${PORT}/${API_TEST_PATH};\
 				else\
-					echo '${API_TEST_DATA}' | curl --noproxy '*' -s -XPOST --fail ${CURL_RETRY_OPTS} localhost:${PORT}/${API_TEST_PATH} -H 'Content-Type: application/json' -d @-;\
+					echo '${API_TEST_DATA}' | curl --noproxy '*' -s -XPOST --fail ${CURL_OPTS} localhost:${PORT}/${API_TEST_PATH} -H 'Content-Type: application/json' -d @-;\
 				fi;\
 			) || (echo "api test on localhost:${PORT}/${API_TEST_PATH} : ko" && exit 1))\
 			|\
@@ -1032,9 +1032,9 @@ remote-test-api:
 			(\
 				((\
 					if [ -z "${API_TEST_DATA}" ];then\
-						curl -s --fail ${CURL_RETRY_OPTS} https://${APP_DNS}/${API_TEST_PATH};\
+						curl -s --fail ${CURL_OPTS} https://${APP_DNS}/${API_TEST_PATH};\
 					else\
-						echo '${API_TEST_DATA}' | curl -s -XPOST --fail ${CURL_RETRY_OPTS} https://${APP_DNS}/${API_TEST_PATH} -H 'Content-Type: application/json' -d @-;\
+						echo '${API_TEST_DATA}' | curl -s -XPOST --fail ${CURL_OPTS} https://${APP_DNS}/${API_TEST_PATH} -H 'Content-Type: application/json' -d @-;\
 					fi;\
 				) || (echo "api test on https://${APP_DNS}/${API_TEST_PATH} : ko" && exit 1))\
 				|\
