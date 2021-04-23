@@ -696,7 +696,7 @@ swift-get-catalog: ${CONFIG_SWIFT_FILE} ${DATA_DIR}
 	| egrep '^${FILES_PATTERN}$$' | sort > ${CATALOG}
 
 swift-push:
-	${SWIFT} --os-auth-url ${OS_AUTH_URL} --auth-version ${OS_IDENTITY_API_VERSION}\
+	@${SWIFT} --os-auth-url ${OS_AUTH_URL} --auth-version ${OS_IDENTITY_API_VERSION}\
 		--os-project-id ${OS_PROJECT_ID}\
 		--os-project-name ${OS_PROJECT_NAME}\
 		--os-user-domain-name ${OS_USER_DOMAIN_NAME}\
@@ -708,7 +708,7 @@ swift-push:
 		--object-name $$(basename ${FILE})
 
 swift-pull:
-	${SWIFT} --os-auth-url ${OS_AUTH_URL} --auth-version ${OS_IDENTITY_API_VERSION}\
+	@${SWIFT} --os-auth-url ${OS_AUTH_URL} --auth-version ${OS_IDENTITY_API_VERSION}\
 		--os-project-id ${OS_PROJECT_ID}\
 		--os-project-name ${OS_PROJECT_NAME}\
 		--os-user-domain-name ${OS_USER_DOMAIN_NAME}\
@@ -818,10 +818,10 @@ aws-get-catalog: ${CONFIG_AWS_FILE} ${DATA_DIR}
 	@${AWS} s3 ls ${STORAGE_BUCKET} | awk '{print $$NF}' | egrep '^${FILES_PATTERN}$$' | sort > ${CATALOG}
 
 aws-push:
-	${AWS} s3 cp ${FILE} s3://${STORAGE_BUCKET}/$$(basename ${FILE})
+	@${AWS} s3 cp ${FILE} s3://${STORAGE_BUCKET}/$$(basename ${FILE})
 
 aws-pull:
-	${AWS} s3 cp s3://${STORAGE_BUCKET}/${FILE} ${DATA_DIR}/${FILE}
+	@${AWS} s3 cp s3://${STORAGE_BUCKET}/${FILE} ${DATA_DIR}/${FILE}
 
 datagouv-to-aws: aws-get-catalog datagouv-get-files
 	@for file in $$(ls ${DATA_DIR} | egrep '^${FILES_PATTERN}$$' | grep -v tmp.list);do\
@@ -975,7 +975,7 @@ remote-actions: remote-deploy
 		fi
 
 remote-test-api-in-vpc: ${CLOUD}-instance-get-tagged-hosts
-	if [ -f "${CONFIG_APP_FILE}" ];then\
+	@if [ -f "${CONFIG_APP_FILE}" ];then\
 		U=$$(cat ${CLOUD_USER_FILE});\
 		for H in $$(cat ${CLOUD_TAGGED_HOSTS_FILE});do\
 			(\
@@ -1025,7 +1025,7 @@ local-test-api:
 	) || (echo "api test on localhost:${PORT}/${API_TEST_PATH} : ko" && exit 1);
 
 remote-test-api:
-	if [ ! -f "${NGINX_UPSTREAM_APPLIED_FILE}" ];then\
+	@if [ ! -f "${NGINX_UPSTREAM_APPLIED_FILE}" ];then\
 		echo "please make nginx-conf-apply first";\
 	else\
 		(\
@@ -1067,7 +1067,7 @@ cdn-cache-purge:
 
 # test artillery
 test-api-generic:
-	export report=reports/`basename ${PERF_SCENARIO} .yml`-${PERF_TEST_ENV}.json ;\
+	@export report=reports/`basename ${PERF_SCENARIO} .yml`-${PERF_TEST_ENV}.json ;\
 		${DC} -f ${DC_FILE}-artillery.yml run artillery run -e ${PERF_TEST_ENV} -o $${report} scenario.yml; \
 		${DC} -f ${DC_FILE}-artillery.yml run artillery report $${report}
 
