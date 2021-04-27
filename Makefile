@@ -278,7 +278,11 @@ docker-push: docker-login docker-tag
 
 docker-login:
 	@echo docker login for ${DOCKER_USERNAME}
-	@echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin
+	@if [ ! -z "${DOCKER_REGISTRY}" ];then\
+		echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin "${DOCKER_REGISTRY}";\
+	else\
+		echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin;\
+	fi
 
 docker-pull:
 	@docker pull ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${APP_VERSION}
