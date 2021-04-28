@@ -250,14 +250,20 @@ docker-build:
 docker-tag:
 	@if [ "${GIT_BRANCH}" == "${GIT_BRANCH_MASTER}" ];then\
 		if [ ! -z "${DOCKER_REGISTRY}" ];then\
+			echo docker tags for ${DOCKER_REGISTRY}/${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${APP_VERSION} and latest;\
+			docker tag ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${APP_VERSION} ${DOCKER_REGISTRY}/${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${APP_VERSION};\
 			docker tag ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${APP_VERSION} ${DOCKER_REGISTRY}/${DOCKER_USERNAME}/${DC_IMAGE_NAME}:latest;\
 		else\
+			echo docker tag for ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:latest;\
 			docker tag ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${APP_VERSION} ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:latest;\
 		fi;\
 	else\
 		if [ ! -z "${DOCKER_REGISTRY}" ];then\
+			echo docker tags for ${DOCKER_REGISTRY}/${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${APP_VERSION} and ${GIT_BRANCH};\
+			docker tag ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${APP_VERSION} ${DOCKER_REGISTRY}/${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${APP_VERSION};\
 			docker tag ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${APP_VERSION} ${DOCKER_REGISTRY}/${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${GIT_BRANCH};\
 		else\
+			echo docker tag for ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:latest;\
 			docker tag ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${APP_VERSION} ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${GIT_BRANCH};\
 		fi;\
 	fi
@@ -297,10 +303,11 @@ docker-push: docker-login docker-tag
 	fi
 
 docker-login:
-	@echo docker login for ${DOCKER_USERNAME}
 	@if [ ! -z "${DOCKER_REGISTRY}" ];then\
+		echo docker login for ${DOCKER_USERNAME} at ${DOCKER_REGISTRY};\
 		echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin "${DOCKER_REGISTRY}";\
 	else\
+		echo docker login for ${DOCKER_USERNAME};\
 		echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin;\
 	fi
 
