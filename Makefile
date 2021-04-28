@@ -277,11 +277,23 @@ docker-check:
 	fi;
 
 docker-push: docker-login docker-tag
-	@docker push ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${APP_VERSION}
-	@if [ "${GIT_BRANCH}" == "${GIT_BRANCH_MASTER}" ];then\
-		docker push ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:latest;\
+	@if [ ! -z "${DOCKER_REGISTRY}" ];then\
+		docker push ${DOCKER_REGISTRY}/${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${APP_VERSION};\
 	else\
-		docker push ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${GIT_BRANCH};\
+		docker push ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${APP_VERSION};\
+	fi;
+	@if [ "${GIT_BRANCH}" == "${GIT_BRANCH_MASTER}" ];then\
+		if [ ! -z "${DOCKER_REGISTRY}" ];then\
+			docker push ${DOCKER_REGISTRY}/${DOCKER_USERNAME}/${DC_IMAGE_NAME}:latest;\
+		else\
+			docker push ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:latest;\
+		fi;\
+	else\
+		if [ ! -z "${DOCKER_REGISTRY}" ];then\
+			docker push ${DOCKER_REGISTRY}/${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${GIT_BRANCH};\
+		else\
+			docker push ${DOCKER_USERNAME}/${DC_IMAGE_NAME}:${GIT_BRANCH};\
+		fi;\
 	fi
 
 docker-login:
