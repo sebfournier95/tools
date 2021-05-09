@@ -1071,7 +1071,7 @@ test-api-generic:
 		${DC} -f ${DC_FILE}-artillery.yml run artillery run -e ${PERF_TEST_ENV} -o $${report} scenario.yml; \
 		${DC} -f ${DC_FILE}-artillery.yml run artillery report $${report}
 
-slack-nofication:
+slack-notification:
 	@if [ ! -z "${SLACK_WEBHOOK}" ]; then curl -X POST --data-urlencode 'payload={\"channel\": \"#matchid\", \"username\": \"matchid-bot\", \"attachments\": [{\"fallback\":\"${SLACK_TITLE}\",\"pretext\":\"${SLACK_TITLE}\",\"color\":\"#D00000\",\"fields\":[{\"title\":\"Remarques\",\"value\":\"${SLACK_MSG}\",\"short\":false}]}], \"icon_url\": \"https://github.com/matchID-project/matchID-project.github.io/raw/master/assets/images/logo-square.png\"}' https://hooks.slack.com/services/${SLACK_WEBHOOK};fi
 
 #GIT matchid projects section
