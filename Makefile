@@ -124,7 +124,7 @@ CLOUD_TAGGED_IDS_INVALID_FILE=${CLOUD_DIR}/${CLOUD}.tag.ids.ko
 CLOUD_TAGGED_HOSTS_INVALID_FILE=${CLOUD_DIR}/${CLOUD}.tag.hosts.ko
 CLOUD_TAG=${APP_VERSION}
 SCW_SERVER_CONF={"name": "${CLOUD_HOSTNAME}", "tags": ["${GIT_BRANCH}","${CLOUD_TAG}"],\
-"image": "${SCW_IMAGE_ID}", "commercial_type": "${SCW_FLAVOR}", "organization": "${SCW_ORGANIZATION_ID}"}
+"image": "${SCW_IMAGE_ID}", "commercial_type": "${SCW_FLAVOR}", "project": "${SCW_PROJECT_ID}"}
 
 NGINX_UPSTREAM_FILE=${NGINX_DIR}/${GIT_BRANCH}.${CLOUD_HOSTNAME}-upstream.conf
 NGINX_UPSTREAM_BACKUP=${NGINX_DIR}/${GIT_BRANCH}.${CLOUD_HOSTNAME}-upstream.bak

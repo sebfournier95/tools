@@ -30,6 +30,7 @@ SCW_DOMAIN=priv.cloud.scaleway.com
 
 #PRIVATE
 #SCW_ORGANIZATION_ID=yours
+#SCW_PROJECT_ID=yours
 #SCW_SECRET_TOKEN=yours
 
 #for SCW S3 storage using RCLONE
