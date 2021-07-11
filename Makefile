@@ -904,7 +904,7 @@ datagouv-get-files: ${DATAGOUV_CATALOG}
 			echo no new file downloaded from datagouv;\
 		else\
 			echo "$$i file(s) downloaded from datagouv";\
-			make slack-notification SLACK_MSG="$$i new file(s) from datagouv";\
+			make slack-notification SLACK_TITLE="Dataprep - deces.matchid.io" SLACK_MSG="$$i new file(s) from datagouv";\
 		fi;\
 	else\
 		echo no new file downloaded from datagouv;\
