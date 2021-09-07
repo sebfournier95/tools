@@ -1,7 +1,7 @@
 ############################
 # Artillery.io load tester #
 ############################
-FROM node:8-alpine
+FROM node:14-alpine
 ARG http_proxy
 ARG https_proxy
 ARG no_proxy

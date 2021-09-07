@@ -97,6 +97,13 @@ CONFIG_DOCKER_FILE=${CONFIG_DIR}/docker
 CONFIG_AWS_FILE=${CONFIG_DIR}/aws
 CONFIG_SWIFT_FILE=${CONFIG_DIR}/swift
 CONFIG_RCLONE_FILE=${CONFIG_DIR}/rclone
+# override if empty
+ifndef SLACK_MSG
+override SLACK_MSG = 'msg'
+endif
+ifndef SLACK_TITLE
+override SLACK_TITLE = 'title'
+endif
 
 dummy		    := $(shell touch artifacts)
 include ./artifacts
