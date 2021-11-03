@@ -871,7 +871,7 @@ datagouv-to-aws: aws-get-catalog datagouv-get-files
 ${DATAGOUV_CATALOG}: config ${DATA_DIR}
 	@echo getting ${DATAGOUV_DATASET} catalog from data.gouv API ${DATAGOUV_API}
 	@curl -s --fail ${DATAGOUV_API}/${DATAGOUV_DATASET}/ | \
-		jq  -cr '.resources[] | .title + " " +.checksum.value + " " + .url' | sort > ${DATAGOUV_CATALOG}
+		jq  -cr '.resources[] | (.url | sub(".*/";"")) + " " +.checksum.value + " " + .url' | sort > ${DATAGOUV_CATALOG}
 
 datagouv-get-catalog: ${DATAGOUV_CATALOG}
 
