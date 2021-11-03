@@ -899,8 +899,10 @@ datagouv-get-files: ${DATAGOUV_CATALOG}
 				grep $$file ${DATA_DIR}/tmp.list | awk '{print $$2}' > ${DATA_DIR}/$$file.sha1.src; \
 				sha1sum < ${DATA_DIR}/$$file | awk '{print $$1}' > ${DATA_DIR}/$$file.sha1.dst; \
 				((diff ${DATA_DIR}/$$file.sha1.src ${DATA_DIR}/$$file.sha1.dst > /dev/null) || echo error downloading $$file); \
-				if [ "$$file" \> "deces-2010" ];then\
-					recode utf8..latin1 ${DATA_DIR}/$$file;\
+				if [[ "$$file" == "deces"* ]]; then\
+					if [ "$$file" \> "deces-2010" ];then\
+						recode utf8..latin1 ${DATA_DIR}/$$file;\
+					fi;\
 				fi;\
 				gzip ${DATA_DIR}/$$file; \
 				sha1sum ${DATA_DIR}/$$file.gz > ${DATA_DIR}/$$file.gz.sha1; \
