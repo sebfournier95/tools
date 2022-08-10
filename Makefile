@@ -451,7 +451,7 @@ SCW-check-api:
 
 SCW-instance-base-update:
 	@SCW_IMAGE_ID=$$(curl -s -H "X-Auth-Token: ${SCW_SECRET_TOKEN}" ${SCW_API}/images |\
-		jq -c '.images[] | [.creation_date, .name, .id, .arch]' | grep x86 | grep Fossa | sort | tail -1 | jq '.[2]' |\
+		jq -c '.images[] | [.creation_date, .name, .id, .arch]' | grep x86 | grep jammy | sort | tail -1 | jq '.[2]' |\
 		sed 's/"//g';);\
 		if [ "${SCW_IMAGE_BASE_ID}" != "$${SCW_IMAGE_ID}" ]; then\
 			(echo SCW_IMAGE_BASE_ID=$${SCW_IMAGE_ID} >> artifacts.SCW);\
