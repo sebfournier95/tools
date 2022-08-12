@@ -559,7 +559,7 @@ ${CLOUD_SNAPSHOT_ID_FILE}.done: ${CLOUD_DIR}
 			| jq -cr '.servers[] | select(.name=="${CLOUD_HOSTNAME}" and (.tags[0] | contains("${GIT_BRANCH}")) and (.tags[1] | contains("${CLOUD_TAG}"))) | .volumes["0"].id'\
 		);\
 		curl -s --fail ${SCW_API}/snapshots -H "X-Auth-Token: ${SCW_SECRET_TOKEN}" -H "Content-Type: application/json" \
-			-d '{"name": "${CLOUD_HOSTNAME}", "organization": "${SCW_ORGANIZATION_ID}", "volume_id": "'$${CLOUD_VOLUME_ID}'"}' \
+			-d '{"name": "${CLOUD_HOSTNAME}", "project": "${SCW_PROJECT_ID}", "volume_id": "'$${CLOUD_VOLUME_ID}'"}' \
 			| jq -r '.snapshot.id' > ${CLOUD_SNAPSHOT_ID_FILE};\
 		CLOUD_SNAPSHOT_ID=$$(cat ${CLOUD_SNAPSHOT_ID_FILE});\
 		echo -n snapshotting volume $${CLOUD_VOLUME_ID} to $${CLOUD_SNAPSHOT_ID};\
@@ -590,7 +590,7 @@ SCW-instance-image: ${CLOUD_SNAPSHOT_ID_FILE}.done
 	if [ ! -f "${CLOUD_IMAGE_ID_FILE}" ];then\
 		CLOUD_SNAPSHOT_ID=$$(cat ${CLOUD_SNAPSHOT_ID_FILE});\
 		curl -s --fail ${SCW_API}/images -H "X-Auth-Token: ${SCW_SECRET_TOKEN}" -H "Content-Type: application/json" \
-			-d '{"name":"${CLOUD_HOSTNAME}", "organization": "${SCW_ORGANIZATION_ID}", "arch": "x86_64", "root_volume": "'$$CLOUD_SNAPSHOT_ID'", "public": "true"}' \
+			-d '{"name":"${CLOUD_HOSTNAME}", "project": "${SCW_PROJECT_ID}", "arch": "x86_64", "root_volume": "'$$CLOUD_SNAPSHOT_ID'", "public": "true"}' \
 			| jq -cr '.image.id' > ${CLOUD_IMAGE_ID_FILE};\
 	fi
 
