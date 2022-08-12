@@ -478,7 +478,7 @@ SCW-instance-order: ${CLOUD_DIR} SCW-check-api
 			rm ${CLOUD_SERVER_ID_FILE} && echo "SCW id: failed to order SCW instance"; \
 			echo 'curl -s ${SCW_API}/servers -H "X-Auth-Token: ${SCW_SECRET_TOKEN}"\
 				-H "Content-Type: application/json" \
-				-d "$$SCW_SERVER_OPTS"';\
+				-d "'$$SCW_SERVER_OPTS'"';\
 			curl -s ${SCW_API}/servers -H "X-Auth-Token: ${SCW_SECRET_TOKEN}" \
 				-H "Content-Type: application/json" \
 				-d "$$SCW_SERVER_OPTS";\
