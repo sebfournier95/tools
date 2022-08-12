@@ -474,6 +474,9 @@ SCW-instance-order: ${CLOUD_DIR} SCW-check-api
 			-H "Content-Type: application/json" \
 			-d "$$SCW_SERVER_OPTS" \
 		| jq -r '.server.id' > ${CLOUD_SERVER_ID_FILE};\
+		if [ "$$(cat ${CLOUD_SERVER_ID_FILE})" == "null" ]; then\
+			rm ${CLOUD_SERVER_ID_FILE} && echo "SCW id: failed to order SCW instance" && exit 1; \
+		fi;\
 	fi
 
 SCW-instance-start: ${CLOUD_SERVER_ID_FILE}
