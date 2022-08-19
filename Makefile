@@ -721,8 +721,14 @@ rclone-pull:
 rclone-sync-pull:
 	@${RCLONE} -q sync ${RCLONE_PROVIDER}:${STORAGE_BUCKET}/ ${DATA_DIR}/
 
+rclone-copy-pull:
+	@${RCLONE} -q copy ${RCLONE_PROVIDER}:${STORAGE_BUCKET}/ ${DATA_DIR}/
+
 rclone-sync-push:
 	@${RCLONE} -q sync ${STORAGE_OPTIONS} ${DATA_DIR}/ ${RCLONE_PROVIDER}:${STORAGE_BUCKET}/
+
+rclone-copy-push:
+	@${RCLONE} -q copy ${STORAGE_OPTIONS} ${DATA_DIR}/ ${RCLONE_PROVIDER}:${STORAGE_BUCKET}/
 
 rclone-mount:
 	@${RCLONE} -q mount --daemon --vfs-cache-mode writes ${STORAGE_OPTIONS} ${RCLONE_PROVIDER}:${STORAGE_BUCKET} ${DATA_DIR}
@@ -853,9 +859,13 @@ storage-push: ${STORAGE_CLI}-push
 
 storage-sync-push: ${STORAGE_CLI}-sync-push
 
+storage-copy-push: ${STORAGE_CLI}-copy-push
+
 storage-pull: ${STORAGE_CLI}-pull
 
 storage-sync-pull: ${STORAGE_CLI}-sync-pull
+
+storage-copy-pull: ${STORAGE_CLI}-copy-pull
 
 storage-mount: ${STORAGE_CLI}-mount
 
