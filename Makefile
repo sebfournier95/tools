@@ -1114,7 +1114,7 @@ remote-install-monitor:
 	@if [ ! -z "${NEW_RELIC_API_KEY}" -a ! -z "${NEW_RELIC_ACCOUNT_ID}" ];then\
 		H=$$(cat ${CLOUD_HOST_FILE});\
 		U=$$(cat ${CLOUD_USER_FILE});\
-		ssh ${SSHOPTS} $$U@$$H "curl -Ls https://download.newrelic.com/install/newrelic-cli/scripts/install.sh | bash && sudo HTTPS_PROXY=${remote_http_proxy} NEW_RELIC_API_KEY=${NEW_RELIC_API_KEY} NEW_RELIC_ACCOUNT_ID=${NEW_RELIC_ACCOUNT_ID} NEW_RELIC_REGION=EU /usr/local/bin/newrelic install -y";\
+		ssh ${SSHOPTS} $$U@$$H "(sleep 60;curl -Ls https://download.newrelic.com/install/newrelic-cli/scripts/install.sh | bash && sudo HTTPS_PROXY=${remote_http_proxy} NEW_RELIC_API_KEY=${NEW_RELIC_API_KEY} NEW_RELIC_ACCOUNT_ID=${NEW_RELIC_ACCOUNT_ID} NEW_RELIC_REGION=EU /usr/local/bin/newrelic install -y) > .install-monitor.log 2>&1 &";\
 	fi
 
 cdn-cache-purge:
