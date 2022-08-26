@@ -411,7 +411,7 @@ nginx-conf-create: ${CLOUD}-instance-get-tagged-hosts nginx-dir
 	@if [ ! -f "${NGINX_UPSTREAM_FILE}" ];then\
 		if [ ! -z "$$(cat ${CLOUD_TAGGED_HOSTS_FILE})" ]; then\
 			cat ${CLOUD_TAGGED_HOSTS_FILE} \
-				| awk 'BEGIN{ print "upstream ${CLOUD_HOSTNAME}-${GIT_BRANCH} {";print "      ip_hash;"}{print "      server " $$1 ":${PORT};"}END{print "}"}'\
+				| awk 'BEGIN{ print "upstream ${CLOUD_HOSTNAME} {";print "      ip_hash;"}{print "      server " $$1 ":${PORT};"}END{print "}"}'\
 				> ${NGINX_UPSTREAM_FILE};\
 		fi;\
 	fi;
