@@ -1110,12 +1110,11 @@ remote-test-api:
 		) || (echo "api test on https://${APP_DNS}/${API_TEST_PATH} : ko" && exit 1);\
 	fi;
 
-remote-install-monitor-nq:
-	@if [ ! -z "${NQ_TOKEN}" -a -f "${CONFIG_REMOTE_FILE}" ];then\
+remote-install-monitor:
+	@if [ ! -z "${NEW_RELIC_API_KEY}" -a ! -z "${NEW_RELIC_ACCOUNT_ID}" ];then\
 		H=$$(cat ${CLOUD_HOST_FILE});\
 		U=$$(cat ${CLOUD_USER_FILE});\
-		ssh ${SSHOPTS} $$U@$$H "curl -sL https://raw.github.com/nodequery/nq-agent/master/nq-install.sh -o ${APP_GROUP}/${TOOLS}/nq-install.sh";\
-		ssh ${SSHOPTS} $$U@$$H "sudo bash ${APP_GROUP}/${TOOLS}/nq-install.sh ${NQ_TOKEN}";\
+		ssh ${SSHOPTS} $$U@$$H "curl -Ls https://download.newrelic.com/install/newrelic-cli/scripts/install.sh | bash && sudo HTTPS_PROXY=${https_proxy} NEW_RELIC_API_KEY=${NEW_RELIC_API_KEY} NEW_RELIC_ACCOUNT_ID=${NEW_RELIC_ACCOUNT_ID} NEW_RELIC_REGION=EU /usr/local/bin/newrelic install";\
 	fi
 
 cdn-cache-purge:
