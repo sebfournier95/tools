@@ -46,6 +46,7 @@ export PERF_NAMES=${PERF}/ids.csv
 AWS=${TOOLS_PATH}/aws
 SWIFT=${TOOLS_PATH}/swift
 RCLONE=/usr/bin/rclone
+RCLONE_SYNC=sync
 
 DATAGOUV_API = https://www.data.gouv.fr/api/1/datasets
 DATAGOUV_DATASET=service-public-fr-annuaire-de-l-administration-base-de-donnees-locales
@@ -719,16 +720,10 @@ rclone-pull:
 	@${RCLONE} ${RCLONE_OPTS} -q --progress copy ${RCLONE_PROVIDER}:${STORAGE_BUCKET}/${FILE} ${DATA_DIR}
 
 rclone-sync-pull:
-	@${RCLONE} -q sync ${RCLONE_PROVIDER}:${STORAGE_BUCKET}/ ${DATA_DIR}/
-
-rclone-copy-pull:
-	@${RCLONE} -q copy ${RCLONE_PROVIDER}:${STORAGE_BUCKET}/ ${DATA_DIR}/
+	@${RCLONE} -q ${RCLONE_OPTS} ${RCLONE_SYNC} ${RCLONE_PROVIDER}:${STORAGE_BUCKET}/ ${DATA_DIR}/
 
 rclone-sync-push:
-	@${RCLONE} -q sync ${STORAGE_OPTIONS} ${DATA_DIR}/ ${RCLONE_PROVIDER}:${STORAGE_BUCKET}/
-
-rclone-copy-push:
-	@${RCLONE} -q copy ${STORAGE_OPTIONS} ${DATA_DIR}/ ${RCLONE_PROVIDER}:${STORAGE_BUCKET}/
+	@${RCLONE} -q  ${RCLONE_OPTS} ${RCLONE_SYNC} ${STORAGE_OPTIONS} ${DATA_DIR}/ ${RCLONE_PROVIDER}:${STORAGE_BUCKET}/
 
 rclone-mount:
 	@${RCLONE} -q mount --daemon --vfs-cache-mode writes ${STORAGE_OPTIONS} ${RCLONE_PROVIDER}:${STORAGE_BUCKET} ${DATA_DIR}
@@ -859,13 +854,9 @@ storage-push: ${STORAGE_CLI}-push
 
 storage-sync-push: ${STORAGE_CLI}-sync-push
 
-storage-copy-push: ${STORAGE_CLI}-copy-push
-
 storage-pull: ${STORAGE_CLI}-pull
 
 storage-sync-pull: ${STORAGE_CLI}-sync-pull
-
-storage-copy-pull: ${STORAGE_CLI}-copy-pull
 
 storage-mount: ${STORAGE_CLI}-mount
 
