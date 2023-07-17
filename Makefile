@@ -1101,15 +1101,23 @@ remote-test-api:
 		) || (echo "api test on https://${APP_DNS}/${API_TEST_PATH} : ko" && exit 1);\
 	fi;
 
-remote-install-monitor:
+remote-install-root-aws-credentials:
+	@if [ ! -z "${STORAGE_ACCESS_KEY}" -a ! -z "${STORAGE_SECRET_KEY}" ];then\
+		H=$$(cat ${CLOUD_HOST_FILE});\
+		U=$$(cat ${CLOUD_USER_FILE});\
+		ssh ${SSHOPTS} $$U@$$H "sudo mkdir /root/.aws";\
+		cat ${TOOLS_PATH}/.aws/config | ssh ${SSHOPTS} $$U@$$H "sudo tee /root/.aws/config > /dev/null";\
+		cat ${TOOLS_PATH}/.aws/credentials | sed "s/<AWS_ACCESS_KEY_ID>/${STORAGE_ACCESS_KEY}/;s/<AWS_SECRET_ACCESS_KEY>/${STORAGE_SECRET_KEY}/;" | ssh ${SSHOPTS} $$U@$$H "sudo tee /root/.aws/credentials > /dev/null";\
+	fi
+
+remote-install-monitor: remote-install-root-aws-credentials
 	@if [ ! -z "${NEW_RELIC_API_KEY}" -a ! -z "${NEW_RELIC_ACCOUNT_ID}" ];then\
 		H=$$(cat ${CLOUD_HOST_FILE});\
 		U=$$(cat ${CLOUD_USER_FILE});\
 		cat ${TOOLS_PATH}/fluent-bit/plugins.conf | ssh ${SSHOPTS} $$U@$$H "sudo tee /tmp/plugins.conf > /dev/null";\
 		cat ${TOOLS_PATH}/fluent-bit/fluent-bit.conf | sed "s/<NEW_RELIC_INGEST_KEY>/${NEW_RELIC_INGEST_KEY}/;s|<HTTPS_PROXY>|${remote_http_proxy}|;s|<MONITOR_BUCKET>|${MONITOR_BUCKET}|;s|<MONITOR_DIR>|${MONITOR_DIR}|" | ssh ${SSHOPTS} $$U@$$H "sudo tee /tmp/fluent-bit.conf > /dev/null";\
-		cat ${TOOLS_PATH}/fluent-bit/aws.conf | sed "s/<AWS_ACCESS_KEY_ID>/${STORAGE_ACCESS_KEY}/;s/<AWS_SECRET_ACCESS_KEY>/${STORAGE_SECRET_KEY}/;" | ssh ${SSHOPTS} $$U@$$H "sudo tee /etc/default/fluent-bit > /dev/null";\
-		ssh ${SSHOPTS} $$U@$$H "(sleep 30;curl -Ls https://download.newrelic.com/install/newrelic-cli/scripts/install.sh | bash && sudo HTTPS_PROXY=${remote_http_proxy} NEW_RELIC_API_KEY=${NEW_RELIC_API_KEY} NEW_RELIC_ACCOUNT_ID=${NEW_RELIC_ACCOUNT_ID} NEW_RELIC_REGION=EU /usr/local/bin/newrelic install -y) > .install-monitor.log 2>&1 &";\
-		ssh ${SSHOPTS} $$U@$$H "(sleep 180;curl -s https://raw.githubusercontent.com/fluent/fluent-bit/master/install.sh | sh && sudo mv /tmp/fluent-bit.conf /tmp/plugins.conf /etc/fluent-bit/ && sudo systemctl restart fluent-bit) > .install-monitor.log 2>&1 &";\
+		ssh ${SSHOPTS} $$U@$$H "(sleep 30;curl -Ls https://download.newrelic.com/install/newrelic-cli/scripts/install.sh | bash && sudo HTTPS_PROXY=${remote_http_proxy} NEW_RELIC_API_KEY=${NEW_RELIC_API_KEY} NEW_RELIC_ACCOUNT_ID=${NEW_RELIC_ACCOUNT_ID} NEW_RELIC_REGION=EU /usr/local/bin/newrelic install -y && echo New Relic Installed) > .install-monitor.log 2>&1 &";\
+		ssh ${SSHOPTS} $$U@$$H "(sleep 180;curl -s https://raw.githubusercontent.com/fluent/fluent-bit/master/install.sh | sh && sudo mv /tmp/fluent-bit.conf /tmp/plugins.conf /etc/fluent-bit/ && sudo systemctl restart fluent-bit && echo Fluent-bit installed) > .install-monitor.log 2>&1 &";\
 	fi
 
 cdn-cache-purge:
