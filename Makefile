@@ -949,6 +949,13 @@ remote-config-proxy: ${CONFIG_DIR} ${CLOUD_FIRST_USER_FILE}
 			if [ ! -z "${remote_no_proxy}" ];then\
 				(echo "no_proxy=${remote_no_proxy}" | ssh ${SSHOPTS} $$U@$$H $$sudo tee -a /etc/environment);\
 			fi;\
+			if [ ! -z "${remote_http_proxy}" -a ! -z "${remote_https_proxy}" ];then\
+				ssh ${SSHOPTS} $$U@$$H $$sudo mkdir -p /etc/systemd/system/docker.service.d/;\
+				(echo '[Service]' | ssh ${SSHOPTS} $$U@$$H $$sudo tee /etc/systemd/system/docker.service.d/http-proxy.conf);\
+				(echo 'Environment="HTTPS_PROXY=${remote_https_proxy}" "HTTP_PROXY=${remote_http_proxy}"' | ssh ${SSHOPTS} $$U@$$H $$sudo tee -a /etc/systemd/system/docker.service.d/http-proxy.conf);\
+				ssh ${SSHOPTS} $$U@$$H $$sudo systemctl daemon-reload;\
+				ssh ${SSHOPTS} $$U@$$H $$sudo sudo systemctl restart docker;\
+			fi;\
 		fi;\
 		touch ${CONFIG_REMOTE_PROXY_FILE};\
 	fi;
