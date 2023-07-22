@@ -122,6 +122,7 @@ CLOUD_SERVER_ID_FILE=${CLOUD_DIR}/${CLOUD}.id
 CLOUD_SNAPSHOT_ID_FILE=${CLOUD_DIR}/${CLOUD}.snapshot.id
 CLOUD_IMAGE_ID_FILE=${CLOUD_DIR}/${CLOUD}.image.id
 CLOUD_HOST_FILE=${CLOUD_DIR}/${CLOUD}.host
+CLOUD_NIC_FILE=${CLOUD_DIR}/${CLOUD}.nic
 CLOUD_FIRST_USER_FILE=${CLOUD_DIR}/${CLOUD}.user.first
 CLOUD_USER_FILE=${CLOUD_DIR}/${CLOUD}.user
 CLOUD_UP_FILE=${CLOUD_DIR}/${CLOUD}.up
@@ -492,7 +493,7 @@ SCW-instance-start: ${CLOUD_SERVER_ID_FILE}
 		(curl -s ${SCW_API}/servers -H "X-Auth-Token: ${SCW_SECRET_TOKEN}" | jq -cr  ".servers[] | select (.id == \"$$SCW_SERVER_ID\") | .state" | (grep running > /dev/null) && \
 		echo scaleway instance already running)\
 		|| \
-	 	(\
+		(\
 			(\
 				(curl -s --fail ${SCW_API}/servers/$$SCW_SERVER_ID/action -H "X-Auth-Token: ${SCW_SECRET_TOKEN}" \
 					-H "Content-Type: application/json" -d '{"action": "poweron"}' > /dev/null) &&\
@@ -500,7 +501,25 @@ SCW-instance-start: ${CLOUD_SERVER_ID_FILE}
 			) || echo scaleway instance still starting\
 		)
 
-SCW-instance-wait-running: SCW-instance-start
+SCW-instance-attach-private-network:
+	@if [ ! -z "${SCW_PRIVATE_NETWORK_ID}" ];then\
+		SCW_SERVER_ID=$$(cat ${CLOUD_SERVER_ID_FILE});\
+		(\
+			(\
+				(\
+					curl -s --fail -X POST \
+						-H "X-Auth-Token: ${SCW_SECRET_TOKEN}" \
+						-H "Content-Type: application/json" \
+						-d '{"private_network_id":"${SCW_PRIVATE_NETWORK_ID}","tags":["${CLOUD_TAG}"]}'\
+						"${SCW_API}/servers/$$SCW_SERVER_ID/private_nics"\
+				> /dev/null) &&\
+				echo scaleway instance attached to private network ${SCW_PRIVATE_NETWORK_ID}\
+			) || echo scaleway failed to attach to private network\
+		)\
+	fi
+
+
+SCW-instance-wait-running: SCW-instance-start SCW-instance-attach-private-network
 	@if [ ! -f "${CLOUD_UP_FILE}" ];then\
 		SCW_SERVER_ID=$$(cat ${CLOUD_SERVER_ID_FILE});\
 		timeout=${START_TIMEOUT} ; ret=1 ;\
@@ -516,9 +535,21 @@ SCW-instance-wait-running: SCW-instance-start
 SCW-instance-get-host: SCW-instance-wait-running
 	@if [ ! -f "${CLOUD_HOST_FILE}" ];then\
 		SCW_SERVER_ID=$$(cat ${CLOUD_SERVER_ID_FILE});\
-		curl -s ${SCW_API}/servers -H "X-Auth-Token: ${SCW_SECRET_TOKEN}" \
-			| jq -cr  ".servers[] | select (.id == \"$$SCW_SERVER_ID\") | .${SCW_IP}" \
-			> ${CLOUD_HOST_FILE};\
+		if [ ! -z "${SCW_PRIVATE_NETWORK_ID}" ];then\
+			curl -s "${SCW_API}/servers/$$SCW_SERVER_ID/private_nics"\
+				-H "X-Auth-Token: ${SCW_SECRET_TOKEN}" \
+				| jq -cr '.private_nics[]' | grep ${SCW_PRIVATE_NETWORK_ID} | jq -cr '.id'\
+				> ${CLOUD_NIC_FILE};\
+			SCW_NIC_ID=$$(cat ${CLOUD_NIC_FILE});\
+			curl -s "${SCW_IPAM_API}/ips" -H "X-Auth-Token: ${SCW_SECRET_TOKEN}"\
+				| jq -cr '.ips[]' | grep $$SCW_NIC_ID | grep '"is_ipv6":false'\
+				| jq -cr '.address' | sed 's|/.*||' \
+				> ${CLOUD_HOST_FILE};\
+		else\
+			curl -s ${SCW_API}/servers -H "X-Auth-Token: ${SCW_SECRET_TOKEN}" \
+				| jq -cr  ".servers[] | select (.id == \"$$SCW_SERVER_ID\") | .${SCW_IP}" \
+				> ${CLOUD_HOST_FILE};\
+		fi;\
 	fi
 
 
