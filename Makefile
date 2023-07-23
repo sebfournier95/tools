@@ -128,6 +128,7 @@ CLOUD_USER_FILE=${CLOUD_DIR}/${CLOUD}.user
 CLOUD_UP_FILE=${CLOUD_DIR}/${CLOUD}.up
 CLOUD_HOSTNAME=${CLOUD_GROUP}-${CLOUD_APP}-${GIT_BRANCH}
 CLOUD_TAGGED_IDS_FILE=${CLOUD_DIR}/${CLOUD}.tag.ids
+CLOUD_TAGGED_HOSTS_VPC_FILE=${CLOUD_DIR}/${CLOUD}.tag.vpc.hosts
 CLOUD_TAGGED_HOSTS_FILE=${CLOUD_DIR}/${CLOUD}.tag.hosts
 CLOUD_TAGGED_IDS_INVALID_FILE=${CLOUD_DIR}/${CLOUD}.tag.ids.ko
 CLOUD_TAGGED_HOSTS_INVALID_FILE=${CLOUD_DIR}/${CLOUD}.tag.hosts.ko
@@ -618,7 +619,7 @@ ${CLOUD_SNAPSHOT_ID_FILE}.done: ${CLOUD_DIR}
 SCW-instance-snapshot: ${CLOUD_SNAPSHOT_ID_FILE}.done
 
 SCW-instance-snapshot-delete: ${CLOUD_SNAPSHOT_ID_FILE}.done
-	\
+	@\
 	CLOUD_SNAPSHOT_ID=$$(cat ${CLOUD_SNAPSHOT_ID_FILE});\
 	echo deleting snapshot $${CLOUD_SNAPSHOT_ID};\
 	curl --fail -XDELETE ${SCW_API}/snapshots/$${CLOUD_SNAPSHOT_ID} -H "X-Auth-Token: ${SCW_SECRET_TOKEN}" && \
@@ -648,11 +649,32 @@ SCW-instance-get-tagged-ids-invalid: ${CLOUD_DIR}
 	fi
 
 SCW-instance-get-tagged-hosts: SCW-instance-get-tagged-ids
-	@if [ ! -f "${CLOUD_TAGGED_HOSTS_FILE}" ];then\
-		curl -s ${SCW_API}/servers -H "X-Auth-Token: ${SCW_SECRET_TOKEN}" -H "Content-Type: application/json"  \
-			| jq -cr '.servers[] | select(.name=="${CLOUD_HOSTNAME}" and (.tags[0] | contains("${GIT_BRANCH}")) and (.tags[1] | contains("${CLOUD_TAG}"))) | .${SCW_IP}'\
-			> ${CLOUD_TAGGED_HOSTS_FILE};\
+	@\
+	if [ ! -f "${CLOUD_TAGGED_HOSTS_FILE}" ];then\
+			curl -s ${SCW_API}/servers -H "X-Auth-Token: ${SCW_SECRET_TOKEN}" -H "Content-Type: application/json"  \
+				| jq -cr '.servers[] | select(.name=="${CLOUD_HOSTNAME}" and (.tags[0] | contains("${GIT_BRANCH}")) and (.tags[1] | contains("${CLOUD_TAG}"))) | .${SCW_IP}'\
+				> ${CLOUD_TAGGED_HOSTS_FILE};\
+	fi;
+	@\
+	if [ ! -z "${SCW_PRIVATE_NETWORK_ID"}" -a ! -f "${CLOUD_TAGGED_HOSTS_VPC_FILE}"  ]; then\
+		touch ${CLOUD_TAGGED_HOSTS_VPC_FILE};\
+		for SCW_SERVER_ID in $$(cat ${CLOUD_TAGGED_IDS_FILE}); do\
+			curl -s "${SCW_API}/servers/$$SCW_SERVER_ID/private_nics"\
+				-H "X-Auth-Token: ${SCW_SECRET_TOKEN}" \
+				| jq -cr '.private_nics[]' | grep ${SCW_PRIVATE_NETWORK_ID} | jq -cr '.id'\
+				> ${CLOUD_NIC_FILE}.tmp;\
+			SCW_NIC_ID=$$(cat ${CLOUD_NIC_FILE}.tmp);\
+			curl -s "${SCW_IPAM_API}/ips" -H "X-Auth-Token: ${SCW_SECRET_TOKEN}"\
+				| jq -cr '.ips[]' | grep $$SCW_NIC_ID | grep '"is_ipv6":false'\
+				| jq -cr '.address' | sed 's|/.*||' \
+				>> ${CLOUD_TAGGED_HOSTS_VPC_FILE};\
+		done;\
+	else\
+		if [ ! -f "${CLOUD_TAGGED_HOSTS_VPC_FILE}" ];then\
+			cp ${CLOUD_TAGGED_HOSTS_FILE} ${CLOUD_TAGGED_HOSTS_VPC_FILE};\
+		fi;\
 	fi
+
 
 SCW-instance-get-tagged-hosts-invalid: SCW-instance-get-tagged-ids-invalid
 	@if [ ! -f "${CLOUD_TAGGED_HOSTS_INVALID_FILE}" ];then\
@@ -1066,7 +1088,7 @@ remote-actions: remote-deploy
 remote-test-api-in-vpc: ${CLOUD}-instance-get-tagged-hosts
 	@if [ -f "${CONFIG_APP_FILE}" ];then\
 		U=$$(cat ${CLOUD_USER_FILE});\
-		for H in $$(cat ${CLOUD_TAGGED_HOSTS_FILE});do\
+		for H in $$(cat ${CLOUD_TAGGED_HOSTS_VPC_FILE});do\
 			(\
 				(\
 					((\
