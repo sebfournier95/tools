@@ -942,11 +942,14 @@ datagouv-get-catalog: ${DATAGOUV_CATALOG}
 datagouv-get-files: ${DATAGOUV_CATALOG}
 	@if [ -s "${CATALOG}" ]; then\
 		(echo egrep -v $$(cat ${CATALOG} | tr '\n' '|' | sed 's/.gz//g;s/^/"(/;s/|$$/)"/') ${DATAGOUV_CATALOG} | sh > ${DATA_DIR}/tmp.list) || true;\
+		(echo egrep -v $$(cat ${CATALOG} | egrep -v '^${FILES_PATTERN_FORCE}$$' | tr '\n' '|' | sed 's/.gz//g;s/^/"(/;s/|$$/)"/') ${DATAGOUV_CATALOG} | sh > ${DATA_DIR}/tmp.force.list) || true;\
 	else\
+		echo "patterns: ${FILES_PATTERN} ${FILES_PATTERN_FORCE}";\
 		cat ${DATAGOUV_CATALOG} | egrep '/${FILES_PATTERN}$$' > ${DATA_DIR}/tmp.list;\
+		cat ${DATAGOUV_CATALOG} | egrep '/${FILES_PATTERN_FORCE}$$' > ${DATA_DIR}/tmp.force.list;\
 	fi
 
-	@if [ -s "${DATA_DIR}/tmp.list" ]; then\
+	@if [ -s "${DATA_DIR}/tmp.list" -o -s "${DATA_DIR}/tmp.force.list" ]; then\
 		if [ ! -f "/usr/bin/recode" ] ; then\
 			if [ "${OS_TYPE}" = "DEB" ]; then\
 				sudo apt-get install -yqq recode; true;\
@@ -978,6 +981,24 @@ datagouv-get-files: ${DATAGOUV_CATALOG}
 		else\
 			echo "$$i file(s) downloaded from datagouv";\
 			make slack-notification SLACK_TITLE="Dataprep - deces.matchid.io" SLACK_MSG="$$i new file(s) from datagouv";\
+		fi;\
+		i=0;\
+		for file in $$(awk '{print $$1}' ${DATA_DIR}/tmp.force.list); do\
+			if [ ! -f ${DATA_DIR}/$$file.gz.sha1 ]; then\
+				echo force-getting $$file ;\
+				grep $$file ${DATA_DIR}/tmp.force.list | awk '{print $$3}' | xargs curl -s > ${DATA_DIR}/$$file; \
+				grep $$file ${DATA_DIR}/tmp.force.list | awk '{print $$2}' > ${DATA_DIR}/$$file.sha1.src; \
+				sha1sum < ${DATA_DIR}/$$file | awk '{print $$1}' > ${DATA_DIR}/$$file.sha1.dst; \
+				((diff ${DATA_DIR}/$$file.sha1.src ${DATA_DIR}/$$file.sha1.dst > /dev/null) || echo error downloading $$file); \
+				gzip ${DATA_DIR}/$$file; \
+				sha1sum ${DATA_DIR}/$$file.gz > ${DATA_DIR}/$$file.gz.sha1; \
+				((i++));\
+			fi;\
+		done;\
+		if [ "$$i" == "0" ]; then\
+			echo -n;\
+		else\
+			echo "$$i file(s) refreshed from datagouv";\
 		fi;\
 	else\
 		echo no new file downloaded from datagouv;\
