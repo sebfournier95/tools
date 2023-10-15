@@ -1,7 +1,8 @@
 #SCALEWAY TEMPLATE to copy to artifacts if you have to deploy to scaleway
-
-SCW_API=https://api.scaleway.com/instance/v1/zones/fr-par-1
-SCW_IPAM_API=https://api.scaleway.com/ipam/v1alpha1/regions/fr-par
+SCW_REGION=fr-par
+SCW_ZONE=${SCW_REGION}-1
+SCW_API=https://api.scaleway.com/instance/v1/zones/${SCW_ZONE}
+SCW_IPAM_API=https://api.scaleway.com/ipam/v1alpha1/regions/${SCW_REGION}
 
 #ubuntu 18.04
 
@@ -17,7 +18,7 @@ SCW_FLAVOR=GP1-XS
 #minimal 2vCPU 2Go with ubuntu 18.04 50Go
 SCW_IMAGE_ID=89c80d27-ddf4-4ffa-8215-b335cce3fd05
 SCW_IMAGE_ID=f974feac-abae-4365-b988-8ec7d1cec10d
-SCW_FLAVOR=DEV1-S
+SCW_FLAVOR=PLAY2-PICO
 
 SCW_SSHUSER=ubuntu
 
@@ -37,10 +38,10 @@ SCW_DOMAIN=priv.cloud.scaleway.com
 #for SCW S3 storage using RCLONE
 export RCLONE_CONFIG_S3_TYPE=s3
 export RCLONE_CONFIG_S3_ENV_AUTH=false
-export RCLONE_CONFIG_S3_ENDPOINT=s3.fr-par.scw.cloud
+export RCLONE_CONFIG_S3_ENDPOINT=s3.${SCW_REGION}.scw.cloud
 #export RCLONE_CONFIG_S3_ACCESS_KEY_ID=SCWXXXXXXXXXXXXXX
 #export RCLONE_CONFIG_S3_SECRET_ACCESS_KEY=1111111-2222-3333-44444-55555555555555
-export RCLONE_CONFIG_S3_REGION=fr-par
+export RCLONE_CONFIG_S3_REGION=${SCW_REGION}
 export RCLONE_CONFIG_S3_LOCATION_CONSTRAINT=
 export RCLONE_CONFIG_S3_ACL=public-read
 export RCLONE_CONFIG_S3_FORCE_PATH_STYLE=false
@@ -54,3 +55,10 @@ SCW_IMAGE_BASE_ID=2289fad9-2694-48ab-bb41-f19e4a9a8584
 SCW_IMAGE_ID=2289fad9-2694-48ab-bb41-f19e4a9a8584
 SCW_IMAGE_TOOLS_ID=e91affb5-2332-4d03-b7c1-e87a3e9cbed7
 SCW_IMAGE_TOOLS_ID=a4d11b15-4e08-4174-86d9-6aa539a953b0
+
+SCW_KUBE_API=https://api.scaleway.com/k8s/v1/regions/${SCW_REGION}/clusters
+SCW_KUBE_NODES=1
+SCW_KUBE_VERSION=1.27.2
+SCW_IMAGE_BASE_ID=2cd4130d-bd0c-463b-a64e-a50d6ce85141
+SCW_IMAGE_ID=2cd4130d-bd0c-463b-a64e-a50d6ce85141
+SCW_IMAGE_TOOLS_ID=2cd4130d-bd0c-463b-a64e-a50d6ce85141
