@@ -134,7 +134,7 @@ CLOUD_TAGGED_IDS_INVALID_FILE=${CLOUD_DIR}/${CLOUD}.tag.ids.ko
 CLOUD_TAGGED_HOSTS_INVALID_FILE=${CLOUD_DIR}/${CLOUD}.tag.hosts.ko
 CLOUD_TAG=${APP_VERSION}
 SCW_VOLUME_SIZE=50000000000
-SCW_VOLUME_TYPE=b_ssd
+SCW_VOLUME_TYPE=l_ssd
 SCW_SERVER_CONF={"name": "${CLOUD_HOSTNAME}", "tags": ["${GIT_BRANCH}","${CLOUD_TAG}"],\
 "image": "${SCW_IMAGE_ID}", "commercial_type": "${SCW_FLAVOR}", "project": "${SCW_PROJECT_ID}",\
 "volumes": { "0": {"size": ${SCW_VOLUME_SIZE}, "volume_type": "${SCW_VOLUME_TYPE}"}}}
