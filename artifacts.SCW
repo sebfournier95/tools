@@ -1,5 +1,6 @@
 #SCALEWAY TEMPLATE to copy to artifacts if you have to deploy to scaleway
 SCW_REGION=fr-par
+SCW_ENDPOINT=s3.${SCW_REGION}.scw.cloud
 SCW_ZONE=${SCW_REGION}-1
 SCW_API=https://api.scaleway.com/instance/v1/zones/${SCW_ZONE}
 SCW_IPAM_API=https://api.scaleway.com/ipam/v1alpha1/regions/${SCW_REGION}
@@ -26,7 +27,7 @@ SCW_DOMAIN=priv.cloud.scaleway.com
 #for SCW S3 storage using RCLONE
 export RCLONE_CONFIG_S3_TYPE=s3
 export RCLONE_CONFIG_S3_ENV_AUTH=false
-export RCLONE_CONFIG_S3_ENDPOINT=s3.${SCW_REGION}.scw.cloud
+export RCLONE_CONFIG_S3_ENDPOINT=${SCW_ENDPOINT}
 #export RCLONE_CONFIG_S3_ACCESS_KEY_ID=SCWXXXXXXXXXXXXXX
 #export RCLONE_CONFIG_S3_SECRET_ACCESS_KEY=1111111-2222-3333-44444-55555555555555
 export RCLONE_CONFIG_S3_REGION=${SCW_REGION}
