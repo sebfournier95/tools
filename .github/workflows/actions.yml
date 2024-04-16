@@ -25,25 +25,6 @@ jobs:
         env:
           GIT_BRANCH: ${{ steps.extract_branch.outputs.branch }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-  aws:
-    name: build docker aws
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v1
-      - name: Extract branch name
-        shell: bash
-        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
-        id: extract_branch
-      - name: Build docker aws
-        run: |
-          make docker-check || make docker-build CLOUD_CLI=aws &&\
-          if [[ "$GIT_BRANCH" == "master" ]]; then
-            make docker-push GIT_BRANCH="$GIT_BRANCH" CLOUD_CLI=aws
-          fi
-        env:
-          GIT_BRANCH: ${{ steps.extract_branch.outputs.branch }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-
   remote:
     name: configure cloud instance
     runs-on: ubuntu-latest
