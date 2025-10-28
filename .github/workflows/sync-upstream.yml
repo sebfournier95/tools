@@ -22,12 +22,12 @@ jobs:
         run: |
           UPSTREAM_SHA=$(curl -s \
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/OWNER/UPSTREAM-REPO/commits/main" \
+            "https://api.github.com/repos/matchID-project/tools/commits/master" \
             | jq -r '.sha')
           
           LATEST_RELEASE=$(curl -s \
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/OWNER/UPSTREAM-REPO/releases/latest" \
+            "https://api.github.com/repos/matchID-project/tools/releases/latest" \
             | jq -r '.tag_name')
           
           echo "upstream_sha=$UPSTREAM_SHA" >> $GITHUB_OUTPUT
@@ -63,12 +63,12 @@ jobs:
                 "fields": [
                   {
                     "name": "Repository",
-                    "value": "OWNER/UPSTREAM-REPO",
+                    "value": "matchID-project/tools",
                     "inline": true
                   },
                   {
                     "name": "Branche",
-                    "value": "main",
+                    "value": "master",
                     "inline": true
                   },
                   {
@@ -109,12 +109,12 @@ jobs:
                   },
                   {
                     "name": "Repository",
-                    "value": "OWNER/UPSTREAM-REPO",
+                    "value": "matchID-project/tools",
                     "inline": true
                   },
                   {
                     "name": "Lien",
-                    "value": "[Voir la release](https://github.com/OWNER/UPSTREAM-REPO/releases/tag/${{ steps.upstream.outputs.latest_release }})",
+                    "value": "[Voir la release](https://github.com/matchID-project/tools/releases/tag/${{ steps.upstream.outputs.latest_release }})",
                     "inline": false
                   }
                 ],
@@ -128,11 +128,11 @@ jobs:
       - name: Synchroniser fork
         if: steps.compare.outputs.commit_changed == 'true'
         run: |
-          git remote add upstream https://github.com/OWNER/UPSTREAM-REPO.git
+          git remote add upstream https://github.com/matchID-project/tools.git
           git fetch upstream
-          git checkout main
-          git merge upstream/main --no-edit
-          git push origin main
+          git checkout master
+          git merge upstream/master --no-edit
+          git push origin master
 
       - name: Notifier Discord - Sync Réussie
         if: success() && (steps.compare.outputs.commit_changed == 'true' || steps.compare.outputs.release_changed == 'true')
@@ -177,4 +177,4 @@ jobs:
           git config user.email "actions@github.com"
           git add .github/upstream_cache/
           git commit -m "chore: update upstream cache" || true
-          git push origin main
+          git push origin master
