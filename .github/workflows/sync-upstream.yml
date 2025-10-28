@@ -1,9 +1,8 @@
 name: Sync Upstream
 on:
   schedule:
-    - cron: '0 */6 * * *'  # Toutes les 6 heures
+    - cron: '0 */6 * * *'
   workflow_dispatch:
-
   push:
     branches:
       - master-local
@@ -15,6 +14,7 @@ jobs:
       - name: Checkout fork
         uses: actions/checkout@v3
         with:
+          ref: master-local
           fetch-depth: 0
 
       - name: Récupérer infos upstream
@@ -54,38 +54,22 @@ jobs:
           curl -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
             -H "Content-Type: application/json" \
             -d '{
-              "username": "Fork Sync Bot",
+              "username": "matchID Tools Sync",
               "avatar_url": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
               "embeds": [{
-                "title": "🔄 Nouveau commit détecté sur upstream",
+                "title": "🔄 Nouveau commit détecté",
                 "description": "Le repository upstream a été mis à jour",
                 "color": 3447003,
-                "fields": [
-                  {
-                    "name": "Repository",
-                    "value": "matchID-project/tools",
-                    "inline": true
-                  },
-                  {
-                    "name": "Branche",
-                    "value": "master",
-                    "inline": true
-                  },
-                  {
-                    "name": "Commit SHA",
-                    "value": "`'"${{ steps.upstream.outputs.upstream_sha }}"'`",
-                    "inline": false
-                  },
-                  {
-                    "name": "Fork",
-                    "value": "${{ github.repository }}",
-                    "inline": false
-                  }
-                ],
-                "timestamp": "'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'",
-                "footer": {
-                  "text": "GitHub Actions"
-                }
+                "fields": [{
+                  "name": "Repository",
+                  "value": "matchID-project/tools",
+                  "inline": true
+                }, {
+                  "name": "Commit SHA",
+                  "value": "`'"${{ steps.upstream.outputs.upstream_sha }}"'`",
+                  "inline": false
+                }],
+                "timestamp": "'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'"
               }]
             }'
 
@@ -95,55 +79,38 @@ jobs:
           curl -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
             -H "Content-Type: application/json" \
             -d '{
-              "username": "Fork Sync Bot",
-              "avatar_url": "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+              "username": "matchID Tools Sync",
               "embeds": [{
-                "title": "🎉 Nouvelle release détectée !",
-                "description": "Une nouvelle version a été publiée sur upstream",
+                "title": "🎉 Nouvelle release",
+                "description": "**${{ steps.upstream.outputs.latest_release }}**",
                 "color": 5763719,
-                "fields": [
-                  {
-                    "name": "Tag",
-                    "value": "**${{ steps.upstream.outputs.latest_release }}**",
-                    "inline": true
-                  },
-                  {
-                    "name": "Repository",
-                    "value": "matchID-project/tools",
-                    "inline": true
-                  },
-                  {
-                    "name": "Lien",
-                    "value": "[Voir la release](https://github.com/matchID-project/tools/releases/tag/${{ steps.upstream.outputs.latest_release }})",
-                    "inline": false
-                  }
-                ],
-                "timestamp": "'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'",
-                "footer": {
-                  "text": "GitHub Actions"
-                }
+                "fields": [{
+                  "name": "Lien",
+                  "value": "[Voir](https://github.com/matchID-project/tools/releases/tag/${{ steps.upstream.outputs.latest_release }})"
+                }],
+                "timestamp": "'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'"
               }]
             }'
 
       - name: Synchroniser fork
         if: steps.compare.outputs.commit_changed == 'true'
         run: |
-          git remote add upstream https://github.com/matchID-project/tools.git
+          git remote add upstream https://github.com/matchID-project/tools.git || true
           git fetch upstream
-          git checkout master
+          git fetch origin master:master
+          git checkout -B master origin/master
           git merge upstream/master --no-edit
           git push origin master
 
-      - name: Notifier Discord - Sync Réussie
+      - name: Notifier Discord - Succès
         if: success() && (steps.compare.outputs.commit_changed == 'true' || steps.compare.outputs.release_changed == 'true')
         run: |
           curl -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
             -H "Content-Type: application/json" \
             -d '{
-              "username": "Fork Sync Bot",
+              "username": "matchID Tools Sync",
               "embeds": [{
                 "title": "✅ Synchronisation réussie",
-                "description": "Le fork a été synchronisé avec succès",
                 "color": 5763719,
                 "timestamp": "'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'"
               }]
@@ -155,14 +122,13 @@ jobs:
           curl -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
             -H "Content-Type: application/json" \
             -d '{
-              "username": "Fork Sync Bot",
+              "username": "matchID Tools Sync",
               "embeds": [{
                 "title": "❌ Erreur de synchronisation",
-                "description": "Une erreur est survenue lors de la synchronisation",
                 "color": 15158332,
                 "fields": [{
-                  "name": "Action",
-                  "value": "[Voir les logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+                  "name": "Logs",
+                  "value": "[Détails](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
                 }],
                 "timestamp": "'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'"
               }]
@@ -171,10 +137,11 @@ jobs:
       - name: Mettre à jour cache
         if: steps.compare.outputs.commit_changed == 'true' || steps.compare.outputs.release_changed == 'true'
         run: |
+          git checkout master-local
           echo "${{ steps.upstream.outputs.upstream_sha }}" > .github/upstream_cache/last_sha.txt
           echo "${{ steps.upstream.outputs.latest_release }}" > .github/upstream_cache/last_release.txt
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git add .github/upstream_cache/
-          git commit -m "chore: update upstream cache" || true
-          git push origin master
+          git commit -m "chore: update upstream cache [skip ci]" || true
+          git push origin master-local
