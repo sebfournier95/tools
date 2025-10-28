@@ -4,6 +4,10 @@ on:
     - cron: '0 */6 * * *'  # Toutes les 6 heures
   workflow_dispatch:
 
+  push:
+    branches:
+      - master-local
+
 jobs:
   check-upstream:
     runs-on: ubuntu-latest
